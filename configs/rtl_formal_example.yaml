@@ -1,0 +1,44 @@
+experiment:
+  name: rtl_formal_example
+  engine: llm_agent
+  seed: 0
+  iterations: 4
+  model: google-vertex/gemini-3.5-flash
+  output_dir: ../runs/rtl_formal_example
+backend:
+  name: rtl_formal
+  settings:
+    intent_catalog: ../rtl_formal/example/intents.yaml
+    rtl_files:
+      - ../rtl_formal/example/gemmini_formal_example.sv
+    top_module: GemminiFormalexample
+    target_file: ../rtl_formal/example/gemmini_formal_example.sv
+    workspace_root: ../runs/rtl_formal_example/workspaces
+    formal_engine: smtbmc
+    solver: z3
+    proof_depth: 8
+    formal_timeout_s: 120
+    strict_required_signals: true
+  resources:
+    prepare:
+      formal: 1
+    verify:
+      formal: 1
+    evaluate:
+      formal: 1
+    feedback:
+      formal: 1
+verification:
+  intent:
+    intent_id: example_queue_issue
+    artifact_type: systemverilog_formal_collateral
+    requirements:
+      - assertions_compile
+      - assertions_non_vacuous
+      - prove_selected_intents
+      - reach_selected_covers
+      - trusted_assumption_policy
+    parameters: {}
+search:
+  configs:
+    llm_agent: search/llm_agent_rtl_formal.yaml

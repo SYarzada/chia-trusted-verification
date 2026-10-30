@@ -1,0 +1,9 @@
+kernel,proposals,replayable,unavailable,coverage_pct
+attention,2098,2098,0,100.0
+mamba,2098,2094,4,99.8093422306959
+matmul,2098,2098,0,100.0
+one_pass_attention,2098,2096,2,99.90467111534795
+one_pass_attention_no_pipelining,2098,2097,1,99.95233555767398
+unary,2096,2058,38,98.18702290076335
+unary_reduce_one_tile,2097,2058,39,98.14020028612303
+vector_scalar_overlap,2096,2030,66,96.85114503816794

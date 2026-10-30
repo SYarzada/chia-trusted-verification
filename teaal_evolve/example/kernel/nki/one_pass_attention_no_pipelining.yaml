@@ -1,0 +1,1126 @@
+einsum:
+  declaration:
+    QH: [E, P4, P3, P2, P1, P0]
+    KH: [E, M3, M2, M1, M0]
+    VH: [F, M3, M2, M1, M0]
+    QS: [E, P4, P3, P2, P1, P0]
+    KS: [E, P4, M3, M2, M1, M0]
+    VS: [F, P4, M3, M2, M1, M0]
+    BQKP: [P4, P3, P2, P1, P0, M3, M2, M1, M0]
+    BQKS: [P4, P3, P2, P1, P0, M3, M2, M1, M0]
+    LMT: [P4, P3, P2, P1, P0, M3, M2]
+    LM: [P4, P3, P2, P1, P0, M3, M2]
+    RM: [P4, P3, P2, P1, P0, M3I, M2I]
+    BQKSRM: [P4, P3, P2, P1, P0, M3, M2, M1, M0]
+    SLN: [P4, P3, P2, P1, P0, M3, M2, M1, M0]
+    SLD: [P4, P3, P2, P1, P0, M3, M2]
+    SLNTP: [P4, P3, P2, P1, P0, M3, M2, M1, M0]
+    SLNTS: [P4, P3, P2, P1, P0, M3, M2, M1, M0]
+    SLNTVP: [P4, P3, P2, P1, P0, M3, M2, F]
+    SLNTVS: [P4, P3, P2, P1, P0, M3, M2, F]
+    RMS: [P4, P3, P2, P1, P0, M3, M2]
+    RMSB: [P4, P3, P2, P1, P0, M3, M2]
+    PRM: [P4, P3, P2, P1, P0, M3, M2]
+    SPD: [P4, P3, P2, P1, P0, M3, M2]
+    RD: [P4, P3, P2, P1, P0, M3I, M2I]
+    SPNV: [P4, P3, P2, P1, P0, M3, M2, F]
+    RNV: [P4, P3, P2, P1, P0, M3I, M2I, F]
+    RDR: [P4, P3, P2, P1, P0]
+    AVS: [P4, P3, P2, P1, P0, F]
+    AVH: [P4, P3, P2, P1, P0, F]
+  expressions:
+    - RM_init: RM[p4, p3, p2, p1, p0, 0, 0] = 340282346638528859811704183484516925440
+    - RD_init: RD[p4, p3, p2, p1, p0, 0, 0] = 0
+    - RNV_init: RNV[p4, p3, p2, p1, p0, 0, 0, f] = 0
+    - QS[e, p4, p3, p2, p1, p0] = QH[e, p4, p3, p2, p1, p0]
+    - KS[e, p4, m3, m2, m1, m0] = KH[e, m3, m2, m1, m0]
+    - VS[f, p4, m3, m2, m1, m0] = VH[f, m3, m2, m1, m0]
+    - BQKP[p4, p3, p2, p1, p0, m3, m2, m1, m0] = QS[e, p4, p3, p2, p1, p0] . KS[e, p4, m3, m2, m1, m0] ;; M binary[multiply] V binary[add]
+    - BQKS[p4, p3, p2, p1, p0, m3, m2, m1, m0] = BQKP[p4, p3, p2, p1, p0, m3, m2, m1, m0] . 0 ;; M binary[add]
+    - LMT[p4, p3, p2, p1, p0, m3, m2] = BQKS[p4, p3, p2, p1, p0, m3, m2, m1, m0] ;; V binary[max]
+    - LM[p4, p3, p2, p1, p0, m3, m2] = LMT[p4, p3, p2, p1, p0, m3, m2] . -1 ;; M binary[multiply]
+    - RMS[p4, p3, p2, p1, p0, m3, m2] = RM[p4, p3, p2, p1, p0, m3, m2 + 0]
+    - RM_update: RM[p4, p3, p2, p1, p0, m3, m2 + 1] = RM[p4, p3, p2, p1, p0, m3, m2 + 0] . LM[p4, p3, p2, p1, p0, m3, m2] ;; M binary[minimum]
+    - BQKSRM[p4, p3, p2, p1, p0, m3, m2, m1, m0] = BQKS[p4, p3, p2, p1, p0, m3, m2, m1, m0] . RM[p4, p3, p2, p1, p0, m3, m2 + 1] ;; M binary[add]
+    - SLN[p4, p3, p2, p1, p0, m3, m2, m1, m0] = BQKSRM[p4, p3, p2, p1, p0, m3, m2, m1, m0] ;; M unary[exp]
+    - SLD[p4, p3, p2, p1, p0, m3, m2] = SLN[p4, p3, p2, p1, p0, m3, m2, m1, m0] ;; V binary[add]
+    - SLNTP[p4, p3, p2, p1, p0, m3, m2, m1, m0] = SLN[p4, p3, p2, p1, p0, m3, m2, m1, m0]
+    - SLNTS[p4, p3, p2, p1, p0, m3, m2, m1, m0] = SLNTP[p4, p3, p2, p1, p0, m3, m2, m1, m0]
+    - SLNTVP[p4, p3, p2, p1, p0, m3, m2, f] = SLNTS[p4, p3, p2, p1, p0, m3, m2, m1, m0] . VS[f, p4, m3, m2, m1, m0] ;; M binary[multiply] V binary[add]
+    - SLNTVS[p4, p3, p2, p1, p0, m3, m2, f] = SLNTVP[p4, p3, p2, p1, p0, m3, m2, f]
+    - RMSB[p4, p3, p2, p1, p0, m3, m2] = RM[p4, p3, p2, p1, p0, m3, m2 + 1] . RMS[p4, p3, p2, p1, p0, m3, m2] ;; M binary[subtract]
+    - PRM[p4, p3, p2, p1, p0, m3, m2] = RMSB[p4, p3, p2, p1, p0, m3, m2] ;; M unary[exp]
+    - SPD[p4, p3, p2, p1, p0, m3, m2] = RD[p4, p3, p2, p1, p0, m3, m2 + 0] . PRM[p4, p3, p2, p1, p0, m3, m2] ;; M binary[multiply]
+    - RD_update: RD[p4, p3, p2, p1, p0, m3, m2 + 1] = SLD[p4, p3, p2, p1, p0, m3, m2] . SPD[p4, p3, p2, p1, p0, m3, m2] ;; M binary[add]
+    - SPNV[p4, p3, p2, p1, p0, m3, m2, f] = RNV[p4, p3, p2, p1, p0, m3, m2 + 0, f] . PRM[p4, p3, p2, p1, p0, m3, m2] ;; M binary[multiply]
+    - RNV_update: RNV[p4, p3, p2, p1, p0, m3, m2 + 1, f] = SPNV[p4, p3, p2, p1, p0, m3, m2, f] . SLNTVS[p4, p3, p2, p1, p0, m3, m2, f] ;; M binary[add]
+    - RM_copy: RM[p4, p3, p2, p1, p0, m3 + 1, 0] = RM[p4, p3, p2, p1, p0, m3, M2]
+    - RD_copy: RD[p4, p3, p2, p1, p0, m3 + 1, 0] = RD[p4, p3, p2, p1, p0, m3, M2]
+    - RNV_copy: RNV[p4, p3, p2, p1, p0, m3 + 1, 0, f] = RNV[p4, p3, p2, p1, p0, m3, M2, f]
+    - RDR[p4, p3, p2, p1, p0] = 1 . RD[p4, p3, p2, p1, p0, M3, 0] ;; M binary[divide]
+    - AVS[p4, p3, p2, p1, p0, f] = RNV[p4, p3, p2, p1, p0, M3, 0, f] . RDR[p4, p3, p2, p1, p0] ;; M binary[multiply]
+    - AVH[p4, p3, p2, p1, p0, f] = AVS[p4, p3, p2, p1, p0, f]
+  shape:
+    M2: 1
+    M1: 4
+    M0: 128
+    P3: 8
+    P2: 2
+    P1: 128
+    P0: 1
+    E: 128
+    F: 128
+mapping:
+  partitioning:
+    RM_init:
+      (P3, P2, P0): [flatten()]
+    RD_init:
+      (P3, P2, P0): [flatten()]
+    RNV_init:
+      (P3, P2, P0, F): [flatten()]
+    QS:
+      (P3, P2, P1, P0): [flatten()]
+    KS:
+      (M2, M1, M0): [flatten()]
+    VS:
+      (M2, M1, F): [flatten()]
+    BQKP:
+      (M2, P3, P2): [flatten()]
+      (M1, M0): [flatten()]
+    BQKS:
+      (M2, P3, P2): [flatten()]
+      (M1, M0): [flatten()]
+    LMT:
+      (M2, P3, P2): [flatten()]
+      (M1, M0): [flatten()]
+    LM:
+      (M2, P3, P2): [flatten()]
+    RMS:
+      (M2, P3, P2): [flatten()]
+    RM_update:
+      (M2, P3, P2): [flatten()]
+    BQKSRM:
+      (M2, P3, P2): [flatten()]
+      (M1, M0): [flatten()]
+    SLN:
+      (M2, P3, P2): [flatten()]
+      (M1, M0): [flatten()]
+    SLD:
+      (M2, P3, P2): [flatten()]
+      (M1, M0): [flatten()]
+    SLNTP:
+      (M2, P3, P2): [flatten()]
+    SLNTS:
+      (M2, P3, P2): [flatten()]
+    SLNTVP:
+      (M2, P3, P2): [flatten()]
+    SLNTVS:
+      (M2, P3, P2): [flatten()]
+    RMSB:
+      (M2, P3, P2): [flatten()]
+    PRM:
+      (M2, P3, P2): [flatten()]
+    SPD:
+      (M2, P3, P2): [flatten()]
+    RD_update:
+      (M2, P3, P2): [flatten()]
+    SPNV:
+      (M2, P3, P2): [flatten()]
+    RNV_update:
+      (M2, P3, P2): [flatten()]
+    RM_copy:
+      (P3, P2, P0): [flatten()]
+    RD_copy:
+      (P3, P2, P0): [flatten()]
+    RNV_copy:
+      (P3, P2, P0, F): [flatten()]
+    RDR:
+      (P3, P2, P0): [flatten()]
+    AVS:
+      (P3, P2): [flatten()]
+    AVH:
+      (P3, P2): [flatten()]
+  loop-order:
+    RM_init: [P4, P1, P3P2P0]
+    RD_init: [P4, P1, P3P2P0]
+    RNV_init: [P4, P1, P3P2P0F]
+    QS: [P4, E, P3P2P1P0]
+    KS: [P4, M3, E, M2M1M0]
+    VS: [P4, M3, M0, M2M1F]
+    BQKP: [P4, M3, M2P3P2, P0, E, P1, M1M0]
+    BQKS: [P4, M3, M2P3P2, P0, P1, M1M0]
+    LMT: [P4, M3, M2P3P2, P0, P1, M1M0]
+    LM: [P4, M3, M2P3P2, P1, P0]
+    RMS: [P4, M3, M2P3P2, P1, P0]
+    RM_update: [P4, M3, M2P3P2, P1, P0]
+    BQKSRM: [P4, M3, M2P3P2, P0, P1, M1M0]
+    SLN: [P4, M3, M2P3P2, P0, P1, M1M0]
+    SLD: [P4, M3, M2P3P2, P0, P1, M1M0]
+    SLNTP: [P4, M3, M2P3P2, P0, M1, P1, M0]
+    SLNTS: [P4, M3, M2P3P2, P0, M1, M0, P1]
+    SLNTVP: [P4, M3, M2P3P2, P0, M1, M0, P1, F]
+    SLNTVS: [P4, M3, M2P3P2, P0, P1, F]
+    RMSB: [P4, M3, M2P3P2, P1, P0]
+    PRM: [P4, M3, M2P3P2, P1, P0]
+    SPD: [P4, M3, M2P3P2, P1, P0]
+    RD_update: [P4, M3, M2P3P2, P1, P0]
+    SPNV: [P4, M3, M2P3P2, P0, P1, F]
+    RNV_update: [P4, M3, M2P3P2, P0, P1, F]
+    RM_copy: [P4, M3, P1, P3P2P0]
+    RD_copy: [P4, M3, P1, P3P2P0]
+    RNV_copy: [P4, M3, P1, P3P2P0F]
+    RDR: [P4, P1, P3P2P0]
+    AVS: [P4, P3P2, P0, P1, F]
+    AVH: [P4, P3P2, P0, P1, F]
+  spacetime:
+    RM_init:
+      space: [P1]
+      time: [P4, P3P2P0]
+    RD_init:
+      space: [P1]
+      time: [P4, P3P2P0]
+    RNV_init:
+      space: [P1]
+      time: [P4, P3P2P0F]
+    QS:
+      space: [E]
+      time: [P4, P3P2P1P0]
+    KS:
+      space: [E]
+      time: [P4, M3, M2M1M0]
+    VS:
+      space: [M0]
+      time: [P4, M3, M2M1F]
+    BQKP:
+      space: [E, P1]
+      time: [P4, M3, M2P3P2, P0, M1M0]
+    BQKS:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0, M1M0]
+    LMT:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0, M1M0]
+    LM:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0]
+    RMS:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0]
+    RM_update:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0]
+    BQKSRM:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0, M1M0]
+    SLN:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0, M1M0]
+    SLD:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0, M1M0]
+    SLNTP:
+      space: [P1, M0]
+      time: [P4, M3, M2P3P2, P0, M1]
+    SLNTS:
+      space: [M0]
+      time: [P4, M3, M2P3P2, P0, M1, P1]
+    SLNTVP:
+      space: [M0, P1]
+      time: [P4, M3, M2P3P2, P0, M1, F]
+    SLNTVS:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0, F]
+    RMSB:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0]
+    PRM:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0]
+    SPD:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0]
+    RD_update:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0]
+    SPNV:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0, F]
+    RNV_update:
+      space: [P1]
+      time: [P4, M3, M2P3P2, P0, F]
+    RM_copy:
+      space: [P1]
+      time: [P4, M3, P3P2P0]
+    RD_copy:
+      space: [P1]
+      time: [P4, M3, P3P2P0]
+    RNV_copy:
+      space: [P1]
+      time: [P4, M3, P3P2P0F]
+    RDR:
+      space: [P1]
+      time: [P4, P3P2P0]
+    AVS:
+      space: [P1]
+      time: [P4, P3P2, P0, F]
+    AVH:
+      space: [P1]
+      time: [P4, P3P2, P0, F]
+  fusion:
+    - einsums: [RM_init, RD_init, RNV_init, QS, KS, VS, BQKP, BQKS, LMT, LM, RMS, RM_update, BQKSRM, SLN, SLD, SLNTP, SLNTS, SLNTVP, SLNTVS, RMSB, PRM, SPD, RD_update, SPNV, RNV_update, RM_copy, RD_copy, RNV_copy, RDR, AVS, AVH]
+      ranks:
+        - [RM_init.P4, RD_init.P4, RNV_init.P4, QS.P4, KS.P4, VS.P4, BQKP.P4, BQKS.P4, LMT.P4, LM.P4, RMS.P4, RM_update.P4, BQKSRM.P4, SLN.P4, SLD.P4, SLNTP.P4, SLNTS.P4, SLNTVP.P4, SLNTVS.P4, RMSB.P4, PRM.P4, SPD.P4, RD_update.P4, SPNV.P4, RNV_update.P4, RM_copy.P4, RD_copy.P4, RNV_copy.P4, RDR.P4, AVS.P4, AVH.P4]
+        - [KS.M3, VS.M3, BQKP.M3, BQKS.M3, LMT.M3, LM.M3, RMS.M3, RM_update.M3, BQKSRM.M3, SLN.M3, SLD.M3, SLNTP.M3, SLNTS.M3, SLNTVP.M3, SLNTVS.M3, RMSB.M3, PRM.M3, SPD.M3, RD_update.M3, SPNV.M3, RNV_update.M3, RM_copy.M3, RD_copy.M3, RNV_copy.M3]
+        - M2P3P2: [BQKP.M2P3P2, BQKS.M2P3P2, LMT.M2P3P2, LM.M2P3P2, RMS.M2P3P2, RM_update.M2P3P2, BQKSRM.M2P3P2, SLN.M2P3P2, SLD.M2P3P2, SLNTP.M2P3P2, SLNTS.M2P3P2, SLNTVP.M2P3P2, SLNTVS.M2P3P2, RMSB.M2P3P2, PRM.M2P3P2, SPD.M2P3P2, RD_update.M2P3P2, SPNV.M2P3P2, RNV_update.M2P3P2]
+        - BQKP_P0: [BQKP.P0, BQKS.P0, LMT.P0]
+        - [BQKS.P1, LMT.P1]
+        - [BQKS.M1M0, LMT.M1M0]
+        - BQKSRM_P0: [BQKSRM.P0, SLN.P0, SLD.P0, SLNTP.P0, SLNTS.P0, SLNTVP.P0, SLNTVS.P0]
+        - [SLNTP.M1, SLNTS.M1, SLNTVP.M1]
+        - [BQKSRM.P1, SLN.P1, SLD.P1]
+        - [BQKSRM.M1M0, SLN.M1M0, SLD.M1M0]
+        - SPNV_P0: [SPNV.P0, RNV_update.P0]
+        - [SPNV.P1, RNV_update.P1]
+        - [SPNV.F, RNV_update.F]
+        - [AVS.P3P2, AVH.P3P2]
+        - [AVS.P0, AVH.P0]
+format:
+  QH:
+    rank-order:
+      QS: [E, P4, P3P2P1P0]
+    bit-width: 16
+    data-type: float
+  QS:
+    rank-order:
+      QS: [P4, E, P3P2P1P0]
+      BQKP: [P4, E, P3, P2, P1, P0]
+    bit-width: 16
+    data-type: bfloat
+  KH:
+    rank-order:
+      KS: [E, M3, M2M1M0]
+    bit-width: 16
+    data-type: float
+  KS:
+    rank-order:
+      KS: [P4, M3, E, M2M1M0]
+      BQKP: [P4, M3, E, M2, M1M0]
+    bit-width: 16
+    data-type: bfloat
+  VH:
+    rank-order:
+      VS: [M0, M3, M2M1F]
+    bit-width: 16
+    data-type: float
+  VS:
+    rank-order:
+      VS: [P4, M3, M0, M2M1F]
+      SLNTVP: [P4, M3, M0, M2, M1, F]
+    bit-width: 16
+    data-type: bfloat
+  BQKP:
+    rank-order:
+      BQKP: [P4, M3, M2P3P2, P0, P1, M1M0]
+      BQKS: [P4, M3, M2P3P2, P0, P1, M1M0]
+    bit-width: 32
+    data-type: float
+  BQKS:
+    rank-order:
+      BQKS: [P4, M3, M2P3P2, P0, P1, M1M0]
+      LMT: [P4, M3, M2P3P2, P0, P1, M1M0]
+      BQKSRM: [P4, M3, M2P3P2, P0, P1, M1M0]
+    bit-width: 32
+    data-type: float
+  LMT:
+    rank-order:
+      LMT: [P4, M3, M2P3P2, P1, P0]
+      LM: [P4, M3, M2P3P2, P1, P0]
+    bit-width: 32
+    data-type: float
+  LM:
+    rank-order:
+      LM: [P4, M3, M2P3P2, P1, P0]
+      RM_update: [P4, M3, M2P3P2, P1, P0]
+    bit-width: 32
+    data-type: float
+  RMS:
+    rank-order:
+      RMS: [P4, M3, M2P3P2, P1, P0]
+      RMSB: [P4, M3, M2P3P2, P1, P0]
+    bit-width: 32
+    data-type: float
+  RM:
+    rank-order:
+      RM_init: [P4, M3I, M2I, P1, P3P2P0]
+      RM_update: [P4, M3I, M2I, P1, P3, P2, P0]
+      RM_copy: [P4, M3I, M2I, P1, P3P2P0]
+      BQKSRM: [P4, M3I, M2I, P1, P3, P2, P0]
+      RMS: [P4, M3I, M2I, P1, P3, P2, P0]
+      RMSB: [P4, M3I, M2I, P1, P3, P2, P0]
+    bit-width: 32
+    data-type: float
+  BQKSRM:
+    rank-order:
+      BQKSRM: [P4, M3, M2P3P2, P0, P1, M1M0]
+      SLN: [P4, M3, M2P3P2, P0, P1, M1M0]
+    bit-width: 32
+    data-type: float
+  SLN:
+    rank-order:
+      SLN: [P4, M3, M2P3P2, P0, P1, M1M0]
+      SLD: [P4, M3, M2P3P2, P0, P1, M1M0]
+      SLNTP: [P4, M3, M2P3P2, P0, P1, M1, M0]
+    bit-width: 16
+    data-type: bfloat
+  SLD:
+    rank-order:
+      SLD: [P4, M3, M2P3P2, P1, P0]
+      RD_update: [P4, M3, M2P3P2, P1, P0]
+    bit-width: 32
+    data-type: float
+  SLNTP:
+    rank-order:
+      SLNTP: [P4, M3, M2P3P2, P0, M1, M0, P1]
+      SLNTS: [P4, M3, M2P3P2, P0, M1, M0, P1]
+    bit-width: 32
+    data-type: float
+  SLNTS:
+    rank-order:
+      SLNTS: [P4, M3, M2P3P2, P0, M0, M1, P1]
+      SLNTVP: [P4, M3, M2P3P2, P0, M0, M1, P1]
+    bit-width: 16
+    data-type: bfloat
+  SLNTVP:
+    rank-order:
+      SLNTVP: [P4, M3, M2P3P2, P0, P1, F]
+      SLNTVS: [P4, M3, M2P3P2, P0, P1, F]
+    bit-width: 32
+    data-type: float
+  SLNTVS:
+    rank-order:
+      SLNTVS: [P4, M3, M2P3P2, P0, P1, F]
+      RNV_update: [P4, M3, M2P3P2, P0, P1, F]
+    bit-width: 32
+    data-type: float
+  RMSB:
+    rank-order:
+      RMSB: [P4, M3, M2P3P2, P1, P0]
+      PRM: [P4, M3, M2P3P2, P1, P0]
+    bit-width: 32
+    data-type: float
+  PRM:
+    rank-order:
+      PRM: [P4, M3, M2P3P2, P1, P0]
+      SPD: [P4, M3, M2P3P2, P1, P0]
+      SPNV: [P4, M3, M2P3P2, P1, P0]
+    bit-width: 32
+    data-type: float
+  SPD:
+    rank-order:
+      RD_update: [P4, M3, M2P3P2, P1, P0]
+      SPD: [P4, M3, M2P3P2, P1, P0]
+    bit-width: 32
+    data-type: float
+  RD:
+    rank-order:
+      RD_init: [P4, M3I, M2I, P1, P3P2P0]
+      RD_update: [P4, M3I, M2I, P1, P3, P2, P0]
+      RD_copy: [P4, M3I, M2I, P1, P3P2P0]
+      SPD: [P4, M3I, M2I, P1, P3, P2, P0]
+      RDR: [P4, M3I, M2I, P1, P3P2P0]
+    bit-width: 32
+    data-type: float
+  SPNV:
+    rank-order:
+      SPNV: [P4, M3, M2P3P2, P0, P1, F]
+      RNV_update: [P4, M3, M2P3P2, P0, P1, F]
+    bit-width: 32
+    data-type: float
+  RNV:
+    rank-order:
+      RNV_init: [P4, M3I, M2I, P1, P3P2P0F]
+      RNV_update: [P4, M3I, M2I, P1, P3, P2, P0, F]
+      RNV_copy: [P4, M3I, M2I, P1, P3P2P0F]
+      SPNV: [P4, M3I, M2I, P1, P3, P2, P0, F]
+      AVS: [P4, M3I, M2I, P1, P3P2, P0, F]
+    bit-width: 32
+    data-type: float
+  RDR:
+    rank-order:
+      RDR: [P4, P1, P3P2P0]
+      AVS: [P4, P1, P3P2, P0]
+    bit-width: 32
+    data-type: float
+  AVS:
+    rank-order:
+      AVS: [P4, P1, P3P2, P0, F]
+      AVH: [P4, P1, P3P2, P0, F]
+    bit-width: 32
+    data-type: float
+  AVH:
+    rank-order:
+      AVH: [P4, P3P2, P1, P0, F]
+    bit-width: 32
+    data-type: float
+binding:
+  engine:
+    - einsum: RM_init
+      component: VectorEngine
+      instruction: MemSet
+      ranks: [P1, P3P2P0]
+    - einsum: RD_init
+      component: VectorEngine
+      instruction: MemSet
+      ranks: [P1, P3P2P0]
+    - einsum: RNV_init
+      component: VectorEngine
+      instruction: MemSet
+      ranks: [P1, P3P2P0F]
+    - einsum: QS
+      component: DMAEngine
+      instruction: Load
+      ranks: [E, P3P2P1P0]
+    - einsum: KS
+      component: DMAEngine
+      instruction: Load
+      ranks: [E, M2M1M0]
+    - einsum: VS
+      component: DMAEngine
+      instruction: Load
+      ranks: [M0, M2M1F]
+    - einsum: BQKP
+      component: TensorEngine
+      instruction: MatMul16
+      ranks: [E, P1, M1M0]
+    - einsums: [BQKS, LMT]
+      component: VectorEngine
+      instruction: TensorConstReduce
+      ranks:
+        BQKS: [P1, M1M0]
+        LMT: [P1, M1M0]
+    - einsum: LM
+      component: VectorEngine
+      instruction: TensorConst
+      ranks: [P1, P0]
+    - einsum: RMS
+      component: VectorEngine
+      instruction: TensorCopy
+      ranks: [P1, P0]
+    - einsum: RM_update
+      component: VectorEngine
+      instruction: TensorTensorSP
+      ranks: [P1, P0]
+    - einsums: [BQKSRM, SLN, SLD]
+      component: ScalarEngine
+      instruction: BiasedUnaryReduce
+      ranks:
+        BQKSRM: [P1, M1M0]
+        SLN: [P1, M1M0]
+        SLD: [P1, M1M0]
+    - einsum: SLNTP
+      component: TensorEngine
+      instruction: Transpose16
+      ranks: [P1, M0]
+    - einsum: SLNTS
+      component: VectorEngine
+      instruction: TensorCopy
+      ranks: [M0, P1]
+    - einsum: SLNTVP
+      component: TensorEngine
+      instruction: MatMul16
+      ranks: [M0, P1, F]
+    - einsum: SLNTVS
+      component: VectorEngine
+      instruction: TensorCopy
+      ranks: [P1, F]
+    - einsum: RMSB
+      component: VectorEngine
+      instruction: TensorTensorSP
+      ranks: [P1, P0]
+    - einsum: PRM
+      component: ScalarEngine
+      instruction: Unary
+      ranks: [P1, P0]
+    - einsum: SPD
+      component: VectorEngine
+      instruction: TensorTensorSP
+      ranks: [P1, P0]
+    - einsum: RD_update
+      component: VectorEngine
+      instruction: TensorTensorSP
+      ranks: [P1, P0]
+    - einsums: [SPNV, RNV_update]
+      component: VectorEngine
+      instruction: TensorScalarTensorSP
+      ranks:
+        SPNV: [P1, F]
+        RNV_update: [P1, F]
+    - einsum: RM_copy
+      component: VectorEngine
+      instruction: TensorCopy
+      ranks: [P1, P3P2P0]
+    - einsum: RD_copy
+      component: VectorEngine
+      instruction: TensorCopy
+      ranks: [P1, P3P2P0]
+    - einsum: RNV_copy
+      component: VectorEngine
+      instruction: TensorCopy
+      ranks: [P1, P3P2P0F]
+    - einsum: RDR
+      component: VectorEngine
+      instruction: Reciprocal
+      ranks: [P1, P3P2P0]
+    - einsum: AVS
+      component: VectorEngine
+      instruction: TensorScalar
+      ranks: [P1, F]
+    - einsum: AVH
+      component: DMAEngine
+      instruction: Store
+      ranks: [P1, F]
+  tensor:
+    - name: QH
+      einsum: QS
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [E, P4, P3P2P1P0]
+    - name: QS
+      einsum: QS
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4]
+        partition: [E]
+        free: [P3P2P1P0]
+    - name: QS
+      einsum: BQKP
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4]
+        partition: [E]
+        free: [P3, P2, P1, P0]
+    - name: KH
+      einsum: KS
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [E, M3, M2M1M0]
+    - name: KS
+      einsum: KS
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3]
+        partition: [E]
+        free: [M2M1M0]
+    - name: KS
+      einsum: BQKP
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3]
+        partition: [E]
+        free: [M2, M1M0]
+    - name: VH
+      einsum: VS
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [M0, M3, M2M1F]
+    - name: VS
+      einsum: VS
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3]
+        partition: [M0]
+        free: [M2M1F]
+    - name: VS
+      einsum: SLNTVP
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3]
+        partition: [M0]
+        free: [M2, M1, F]
+    - name: BQKP
+      einsum: BQKP
+      component:
+        name: PSUM
+      constructor: zeros
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        free: [M1M0]
+    - name: BQKP
+      einsum: BQKS
+      component:
+        name: PSUM
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        free: [M1M0]
+    - name: BQKS
+      einsum: BQKS
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        free: [M1M0]
+    - name: BQKS
+      einsum: LMT
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        free: [M1M0]
+    - name: BQKS
+      einsum: BQKSRM
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        free: [M1M0]
+    - name: LMT
+      einsum: LMT
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: LMT
+      einsum: LM
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: LM
+      einsum: LM
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: LM
+      einsum: RM_update
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: RM
+      einsum: RM_init
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3P2P0]
+    - name: RM
+      einsum: RM_update
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3, P2, P0]
+    - name: RM
+      einsum: RM_copy
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3P2P0]
+    - name: RM
+      einsum: BQKSRM
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3, P2, P0]
+    - name: RM
+      einsum: RMS
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3, P2, P0]
+    - name: RM
+      einsum: RMSB
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3, P2, P0]
+    - name: BQKSRM
+      einsum: BQKSRM
+      component:
+        name: ScalarEnginePipelineRegisters
+      constructor: default
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        registers: [M1M0]
+    - name: BQKSRM
+      einsum: SLN
+      component:
+        name: ScalarEnginePipelineRegisters
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        registers: [M1M0]
+    - name: SLN
+      einsum: SLN
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        free: [M1M0]
+    - name: SLN
+      einsum: SLD
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        free: [M1M0]
+    - name: SLN
+      einsum: SLNTP
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        free: [M1, M0]
+    - name: SLD
+      einsum: SLD
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: SLD
+      einsum: RD_update
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: SLNTP
+      einsum: SLNTP
+      component:
+        name: PSUM
+      constructor: zeros
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0, M1]
+        partition: [M0]
+        free: [P1]
+    - name: SLNTP
+      einsum: SLNTS
+      component:
+        name: PSUM
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0, M1]
+        partition: [M0]
+        free: [P1]
+    - name: SLNTS
+      einsum: SLNTS
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [M0]
+        free: [M1, P1]
+    - name: SLNTS
+      einsum: SLNTVP
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [M0]
+        free: [M1, P1]
+    - name: SLNTVP
+      einsum: SLNTVP
+      component:
+        name: PSUM
+      constructor: zeros
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        free: [F]
+    - name: SLNTVP
+      einsum: SLNTVS
+      component:
+        name: PSUM
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        free: [F]
+    - name: SLNTVS
+      einsum: SLNTVS
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        free: [F]
+    - name: SLNTVS
+      einsum: RNV_update
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        free: [F]
+    - name: RMS
+      einsum: RMS
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: RMS
+      einsum: RMSB
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: RMSB
+      einsum: RMSB
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: RMSB
+      einsum: PRM
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: PRM
+      einsum: PRM
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: PRM
+      einsum: SPD
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: PRM
+      einsum: SPNV
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: SPD
+      einsum: SPD
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: SPD
+      einsum: RD_update
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3, M2P3P2]
+        partition: [P1]
+        free: [P0]
+    - name: RD
+      einsum: RD_init
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3P2P0]
+    - name: RD
+      einsum: RD_update
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3, P2, P0]
+    - name: RD
+      einsum: RD_copy
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3P2P0]
+    - name: RD
+      einsum: SPD
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3, P2, P0]
+    - name: RD
+      einsum: RDR
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3P2P0]
+    - name: SPNV
+      einsum: SPNV
+      component:
+        name: VectorEnginePipelineRegisters
+      constructor: default
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        registers: [F]
+    - name: SPNV
+      einsum: RNV_update
+      component:
+        name: VectorEnginePipelineRegisters
+      ranks:
+        unbound: [P4, M3, M2P3P2, P0]
+        partition: [P1]
+        registers: [F]
+    - name: RNV
+      einsum: RNV_init
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3P2P0F]
+    - name: RNV
+      einsum: RNV_update
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3, P2, P0, F]
+    - name: RNV
+      einsum: RNV_copy
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3P2P0F]
+    - name: RNV
+      einsum: SPNV
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3, P2, P0, F]
+    - name: RNV
+      einsum: AVS
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4, M3I, M2I]
+        partition: [P1]
+        free: [P3P2, P0, F]
+    - name: RDR
+      einsum: RDR
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4]
+        partition: [P1]
+        free: [P3P2P0]
+    - name: RDR
+      einsum: AVS
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4]
+        partition: [P1]
+        free: [P3P2, P0]
+    - name: AVS
+      einsum: AVS
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [P4]
+        partition: [P1]
+        free: [P3P2, P0, F]
+    - name: AVS
+      einsum: AVH
+      component:
+        name: SBUF
+      ranks:
+        unbound: [P4]
+        partition: [P1]
+        free: [P3P2, P0, F]
+    - name: AVH
+      einsum: AVH
+      component:
+        name: HBM
+      constructor: empty
+      ranks:
+        unbound: []
+        bound: [P4, P3P2, P1, P0, F]
+options:
+  kernel-name: attn
+  cascade-outputs: [AVH]

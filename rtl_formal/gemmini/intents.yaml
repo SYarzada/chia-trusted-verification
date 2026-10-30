@@ -1,0 +1,276 @@
+schema_version: 1
+backend: rtl_formal
+target: Gemmini
+reference_repository: https://github.com/ucb-bar/gemmini
+reference_commit: be2e9f26181658895ebc7ca7f7d6be6210f5cdef
+selection_rationale: >-
+  The evaluation uses 24 intents, with six from each of four areas: queue and dependency,
+  control, memory and DMA, and interface and protocol. This covers different Gemmini
+  functions while keeping the study manageable with three seeds and up to four attempts per run.
+intents:
+  - intent_id: Q1_no_issue_with_dependencies
+    category: queue_dependency
+    title: Do not issue with unresolved dependencies
+    requirement: An allocated reservation-station entry must not issue until all tracked load, execute, and store dependencies are resolved.
+    target_module: ReservationStation
+    source_file: src/main/scala/gemmini/ReservationStation.scala
+    source_anchor: Entry.ready and issue_valids
+    signal_hints: [deps_ld, deps_ex, deps_st, issued, issue_valids, io_issue_ld_valid, io_issue_ex_valid, io_issue_st_valid]
+    required_property_kinds: [assert, cover]
+    rationale: Prevents commands from issuing before their dependencies are resolved.
+
+  - intent_id: Q2_issue_only_valid_entry
+    category: queue_dependency
+    title: Issue only valid allocated entries
+    requirement: An issued load, execute, or store command must come from a valid, allocated entry that has not issued before.
+    target_module: ReservationStation
+    source_file: src/main/scala/gemmini/ReservationStation.scala
+    source_anchor: issue_valids = valid && ready && !issued
+    signal_hints: [entries_ld, entries_ex, entries_st, issued, issue_valids, io_issue_ld_valid, io_issue_ex_valid, io_issue_st_valid]
+    required_property_kinds: [assert, cover]
+    rationale: Prevents invalid or previously issued entries from issuing again.
+
+  - intent_id: Q3_oldest_ready_priority
+    category: queue_dependency
+    title: Give priority to the lowest-index ready entry
+    requirement: When multiple unissued entries are ready in a reservation-station queue, the priority encoder must select the ready entry with the lowest index.
+    target_module: ReservationStation
+    source_file: src/main/scala/gemmini/ReservationStation.scala
+    source_anchor: PriorityEncoderOH(issue_valids)
+    signal_hints: [issue_valids, issue_sel, issue_id, entries_ld, entries_ex, entries_st]
+    required_property_kinds: [assert, cover]
+    rationale: Checks that the queue follows its priority rule.
+
+  - intent_id: Q4_completion_releases_entry
+    category: queue_dependency
+    title: Completion releases the matching entry
+    requirement: A valid completion for a load, execute, or store ROB ID must clear the matching reservation-station entry and its dependency bits.
+    target_module: ReservationStation
+    source_file: src/main/scala/gemmini/ReservationStation.scala
+    source_anchor: io.completed.fire completion handling
+    signal_hints: [io_completed_valid, io_completed_bits, entries_ld, entries_ex, entries_st, deps_ld, deps_ex, deps_st]
+    required_property_kinds: [assert, cover]
+    rationale: Prevents completed work from blocking later commands.
+
+  - intent_id: Q5_complete_on_issue_releases_entry
+    category: queue_dependency
+    title: Release complete-on-issue entries
+    requirement: An entry marked complete_on_issue must no longer be valid after it issues.
+    target_module: ReservationStation
+    source_file: src/main/scala/gemmini/ReservationStation.scala
+    source_anchor: e.valid := !e.bits.complete_on_issue
+    signal_hints: [complete_on_issue, issue_sel, issued, valid]
+    required_property_kinds: [assert, cover]
+    rationale: Checks the immediate-completion path used by some configuration commands.
+
+  - intent_id: Q6_full_queue_blocks_allocation
+    category: queue_dependency
+    title: Do not allocate to a full queue
+    requirement: A command cannot complete allocation to a full load, execute, or store queue until space is available.
+    target_module: ReservationStation
+    source_file: src/main/scala/gemmini/ReservationStation.scala
+    source_anchor: alloc_id selection and io.alloc.ready
+    signal_hints: [io_alloc_valid, io_alloc_ready, full_ld, full_ex, full_st, entries_ld, entries_ex, entries_st]
+    required_property_kinds: [assert, cover]
+    rationale: Prevents new commands from overwriting active entries.
+
+  - intent_id: C1_load_config_no_dma
+    category: control
+    title: Load configuration does not start DMA
+    requirement: LoadController must handle a configuration command as a configuration update, not as a data-load DMA command.
+    target_module: LoadController
+    source_file: src/main/scala/gemmini/LoadController.scala
+    source_anchor: DoConfig / DoLoad control in waiting_for_command
+    signal_hints: [DoConfig, DoLoad, cmd_ready, io_dma_req_valid, control_state]
+    required_property_kinds: [assert, cover]
+    rationale: Keeps configuration commands separate from data transfers.
+
+  - intent_id: C2_load_completion_after_tracker
+    category: control
+    title: Load completion requires tracked DMA completion
+    requirement: LoadController must report completion only when the DMA command tracker reports the command complete, not when the command is first accepted.
+    target_module: LoadController
+    source_file: src/main/scala/gemmini/LoadController.scala
+    source_anchor: io.completed driven by cmd_tracker.io.cmd_completed
+    signal_hints: [io_completed_valid, io_completed_bits, cmd_tracker, cmd_completed, io_dma_resp_valid]
+    required_property_kinds: [assert, cover]
+    rationale: Prevents a load from completing before its DMA work finishes.
+
+  - intent_id: C3_execute_busy_tracks_outstanding_work
+    category: control
+    title: Execute busy tracks active work
+    requirement: ExecuteController must report busy if the command at the head of its queue is valid or a matrix operation with a valid ROB tag is still running.
+    target_module: ExecuteController
+    source_file: src/main/scala/gemmini/ExecuteController.scala
+    source_anchor: io.busy := cmd.valid(0) || matmul_in_progress
+    signal_hints: [io_busy, cmd_valid, matmul_in_progress, tags_in_progress]
+    required_property_kinds: [assert, cover]
+    rationale: Ensures busy reflects queued or running work.
+
+  - intent_id: C4_single_transposer_exclusive
+    category: control
+    title: Only one operand uses the transposer
+    requirement: After execute configuration is initialized, at most one of the A, B, and D operand paths may feed the shared transposer in one cycle.
+    target_module: ExecuteController
+    source_file: src/main/scala/gemmini/ExecuteController.scala
+    source_anchor: Too many inputs are being fed into the single transposer we have
+    signal_hints: [config_initialized, a_should_be_fed_into_transposer, b_should_be_fed_into_transposer, d_should_be_fed_into_transposer]
+    required_property_kinds: [assert, cover]
+    rationale: Prevents multiple operands from using the same transposer at once.
+
+  - intent_id: C5_load_command_eventually_releases
+    category: control
+    title: Accepted load can return to ready
+    requirement: After accepting a valid load command, LoadController must be able to return to waiting_for_command and release the command when the DMA environment responds.
+    target_module: LoadController
+    source_file: src/main/scala/gemmini/LoadController.scala
+    source_anchor: waiting_for_dma_req_ready / sending_rows state transitions
+    signal_hints: [control_state, cmd_valid, cmd_ready, io_dma_req_valid, io_dma_req_ready, row_counter]
+    required_property_kinds: [assert, cover]
+    rationale: Checks that a load can make progress when DMA responds.
+    notes: Any assumptions about DMA responses must come from the trusted harness, not the agent.
+
+  - intent_id: C6_completion_rob_id_is_live
+    category: control
+    title: Completion must refer to a valid ROB entry
+    requirement: A completion accepted by ReservationStation must refer to a currently valid entry in the queue type encoded by its ROB ID.
+    target_module: ReservationStation
+    source_file: src/main/scala/gemmini/ReservationStation.scala
+    source_anchor: asserts on entries_ld/ex/st(issue_id).valid
+    signal_hints: [io_completed_valid, io_completed_bits, entries_ld, entries_ex, entries_st]
+    required_property_kinds: [assert, cover]
+    rationale: Prevents completions from referring to invalid entries.
+
+  - intent_id: M1_single_port_no_read_write_conflict
+    category: memory_dma
+    title: No simultaneous read and write to a single-port bank
+    requirement: A single-ported ScratchpadBank must not enable a read and accept a write in the same cycle.
+    target_module: ScratchpadBank
+    source_file: src/main/scala/gemmini/Scratchpad.scala
+    source_anchor: assert(!(ren && io.write.fire))
+    signal_hints: [ren, io_write_valid, io_write_ready, single_ported]
+    required_property_kinds: [assert, cover]
+    rationale: Checks that a single memory port is not used for both operations at once.
+
+  - intent_id: M2_external_scratchpad_dma_queue_tracks_reads
+    category: memory_dma
+    title: Track external scratchpad DMA reads
+    requirement: When using external scratchpad memory, DMA-origin metadata must be queued for every launched read and removed when its matching response enters the response queue.
+    target_module: ScratchpadBank
+    source_file: src/main/scala/gemmini/Scratchpad.scala
+    source_anchor: dma_q enqueue/dequeue assertions
+    signal_hints: [dma_q, ren, q_io_enq_fire, ext_mem_read_resp_valid]
+    required_property_kinds: [assert, cover]
+    rationale: Keeps read requests and their response metadata aligned.
+
+  - intent_id: M3_accumulator_write_not_dropped
+    category: memory_dma
+    title: Do not drop accumulator writes
+    requirement: When ExecuteController sends a valid accumulator write, the selected accumulator bank must be ready to accept it.
+    target_module: ExecuteController
+    source_file: src/main/scala/gemmini/ExecuteController.scala
+    source_anchor: Execute controller write to AccumulatorMem was skipped
+    signal_hints: [io_acc_write_valid, io_acc_write_ready, w_bank, write_to_acc]
+    required_property_kinds: [assert, cover]
+    rationale: Prevents accumulator writes from being lost.
+
+  - intent_id: M4_load_dma_nonzero_transfer
+    category: memory_dma
+    title: Load DMA transfer must be nonzero
+    requirement: An mvin allocation accepted by LoadController must request more than zero bytes.
+    target_module: LoadController
+    source_file: src/main/scala/gemmini/LoadController.scala
+    source_anchor: A single mvin instruction must load more than 0 bytes
+    signal_hints: [cmd_tracker_io_alloc_valid, cmd_tracker_io_alloc_ready, bytes_to_read]
+    required_property_kinds: [assert, cover]
+    rationale: Prevents zero-byte load transfers.
+
+  - intent_id: M5_full_width_acc_no_block_mvout
+    category: memory_dma
+    title: Full-width accumulator move-out uses one block
+    requirement: A store DMA request that reads a full accumulator row must use no more than one block in that move-out operation.
+    target_module: StoreController
+    source_file: src/main/scala/gemmini/StoreController.scala
+    source_anchor: Block-mvouts are not permitted when moving out full accumulator data
+    signal_hints: [io_dma_req_valid, read_full_acc_row, blocks]
+    required_property_kinds: [assert, cover]
+    rationale: Checks the block limit for full-width accumulator transfers.
+
+  - intent_id: M6_pooling_no_block_mvout
+    category: memory_dma
+    title: No multi-block move-out during pooling or 1D mode
+    requirement: StoreController must not start a multi-block move-out while pooling or one-dimensional move-out mode is enabled.
+    target_module: StoreController
+    source_file: src/main/scala/gemmini/StoreController.scala
+    source_anchor: Block-mvouts are not permitted when pooling
+    signal_hints: [pooling_is_enabled, mvout_1d_enabled, blocks, io_dma_req_valid]
+    required_property_kinds: [assert, cover]
+    rationale: Checks the block limit for pooling and one-dimensional transfers.
+
+  - intent_id: I1_decoupled_stall_stability
+    category: interface_protocol
+    title: Keep stalled requests stable
+    requirement: On the selected Decoupled request interface, if valid is high and ready is low, the request payload must stay unchanged until the request is accepted.
+    target_module: LoadController
+    source_file: src/main/scala/gemmini/LoadController.scala
+    source_anchor: io.dma.req Decoupled request interface
+    signal_hints: [io_dma_req_valid, io_dma_req_ready, io_dma_req_bits]
+    required_property_kinds: [assert, cover]
+    rationale: Checks correct behavior when a DMA request is stalled.
+    notes: Use the payload signal names from the generated RTL.
+
+  - intent_id: I2_request_consumed_only_on_handshake
+    category: interface_protocol
+    title: Advance requests only after a handshake
+    requirement: Controller state must advance because a DMA request was sent only when both valid and ready are high.
+    target_module: LoadController
+    source_file: src/main/scala/gemmini/LoadController.scala
+    source_anchor: when (io.dma.req.fire) row/state updates
+    signal_hints: [io_dma_req_valid, io_dma_req_ready, row_counter, control_state]
+    required_property_kinds: [assert, cover]
+    rationale: Prevents request state from advancing before acceptance.
+
+  - intent_id: I3_completion_only_for_accepted_work
+    category: interface_protocol
+    title: Complete only accepted work
+    requirement: A controller completion must match a command that was previously accepted and is tracked as outstanding.
+    target_module: LoadController
+    source_file: src/main/scala/gemmini/LoadController.scala
+    source_anchor: DMACommandTracker allocation and io.completed
+    signal_hints: [cmd_tracker, io_completed_valid, io_completed_bits, cmd_valid, cmd_ready]
+    required_property_kinds: [assert, cover]
+    rationale: Connects command acceptance to completion.
+
+  - intent_id: I4_dma_response_matches_tracked_command
+    category: interface_protocol
+    title: DMA response matches a tracked command
+    requirement: A consumed DMA response must match an outstanding tracked command and must not create an unrelated completion.
+    target_module: StoreController
+    source_file: src/main/scala/gemmini/StoreController.scala
+    source_anchor: cmd_tracker.io.request_returned and io.completed
+    signal_hints: [io_dma_resp_valid, io_dma_resp_ready, cmd_tracker, io_completed_valid]
+    required_property_kinds: [assert, cover]
+    rationale: Keeps DMA responses matched to their commands.
+
+  - intent_id: I5_reset_returns_idle
+    category: interface_protocol
+    title: Reset prevents unexpected issue or completion
+    requirement: After reset, ReservationStation must not issue a command or report a completion before new work is accepted.
+    target_module: ReservationStation
+    source_file: src/main/scala/gemmini/ReservationStation.scala
+    source_anchor: empty/busy state and reset-initialized state
+    signal_hints: [reset, io_busy, io_issue_ld_valid, io_issue_ex_valid, io_issue_st_valid]
+    required_property_kinds: [assert, cover]
+    rationale: Checks that reset leaves the reservation station in a valid idle state.
+    notes: Only check signals with defined reset behavior in the generated RTL.
+
+  - intent_id: I6_meaningful_transaction_reachable
+    category: interface_protocol
+    title: A valid transaction is reachable
+    requirement: The formal harness must show that at least one valid transaction can be accepted by the target, so verification does not rely only on the absence of reachable activity.
+    target_module: ReservationStation
+    source_file: src/main/scala/gemmini/ReservationStation.scala
+    source_anchor: io.alloc.fire and issue interfaces
+    signal_hints: [io_alloc_valid, io_alloc_ready, io_issue_ld_valid, io_issue_ex_valid, io_issue_st_valid]
+    required_property_kinds: [assert, cover]
+    rationale: Checks that useful behavior is reachable during formal verification.

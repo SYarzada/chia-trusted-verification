@@ -1,0 +1,18 @@
+max_iterations: 30
+search:
+  type: alphaevolve
+alphaevolve:
+  location: global
+  collection: default_collection
+  assistant: default_assistant
+  num_samplers: 1
+  num_evaluators: 1
+  idle_timeout_s: 120
+  title: CHIA Trusted Verification
+  generation_settings:
+    include_full_program_in_prompt: true
+    models:
+    - name: gemini-3.5-flash
+      weight: 1.0
+monitor:
+  enabled: false

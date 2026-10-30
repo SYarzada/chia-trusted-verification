@@ -1,0 +1,175 @@
+einsum:
+  declaration:
+    AH:
+    - M
+    - N
+    AS:
+    - M
+    - N
+    ZS:
+    - M
+    - N
+    ZH:
+    - M
+    - N
+  expressions:
+  - AS[m, n] = AH[m, n]
+  - ZS[m, n] = AS[m, n] ;; M unary[square]
+  - ZH[m, n] = ZS[m, n]
+  shape:
+    M: 512
+    N: 128
+mapping:
+  loop-order:
+    AS:
+    - N
+    - M
+    ZS:
+    - N
+    - M
+    ZH:
+    - N
+    - M
+  spacetime:
+    AS:
+      space:
+      - N
+      time:
+      - M
+    ZS:
+      space:
+      - N
+      time:
+      - M
+    ZH:
+      space:
+      - N
+      time:
+      - M
+  fusion:
+  - einsums:
+    - AS
+    - ZS
+    - ZH
+    ranks: []
+format:
+  AH:
+    rank-order:
+      AS:
+      - N
+      - M
+    bit-width: 16
+    data-type: float
+  AS:
+    rank-order:
+      AS:
+      - N
+      - M
+      ZS:
+      - N
+      - M
+    bit-width: 16
+    data-type: float
+  ZS:
+    rank-order:
+      ZS:
+      - N
+      - M
+      ZH:
+      - N
+      - M
+    bit-width: 16
+    data-type: float
+  ZH:
+    rank-order:
+      ZH:
+      - N
+      - M
+    bit-width: 16
+    data-type: float
+binding:
+  engine:
+  - einsum: AS
+    component: DMAEngine
+    instruction: Load
+    ranks:
+    - N
+    - M
+  - einsum: ZS
+    component: ScalarEngine
+    instruction: Unary
+    ranks:
+    - N
+    - M
+  - einsum: ZH
+    component: DMAEngine
+    instruction: Store
+    ranks:
+    - N
+    - M
+  tensor:
+  - name: AH
+    einsum: AS
+    component:
+      name: HBM
+    ranks:
+      unbound: []
+      bound:
+      - N
+      - M
+  - name: AS
+    einsum: AS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound: []
+      partition:
+      - N
+      free:
+      - M
+  - name: AS
+    einsum: ZS
+    component:
+      name: SBUF
+    ranks:
+      unbound: []
+      partition:
+      - N
+      free:
+      - M
+  - name: ZS
+    einsum: ZS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound: []
+      partition:
+      - N
+      free:
+      - M
+  - name: ZS
+    einsum: ZH
+    component:
+      name: SBUF
+    ranks:
+      unbound: []
+      partition:
+      - N
+      free:
+      - M
+  - name: ZH
+    einsum: ZH
+    component:
+      name: HBM
+    constructor: empty
+    ranks:
+      unbound: []
+      bound:
+      - N
+      - M
+options:
+  kernel-name: unary
+  cascade-outputs:
+  - ZH

@@ -1,0 +1,1096 @@
+einsum:
+  declaration:
+    A: [D1, D0, N]
+    BF: [B, N, T1, T0]
+    C: [B, N, T1, T0]
+    DF: [B, D1, D0, T1, T0]
+    U: [B, D1, D0, T1, T0]
+    AH: [D1, D0, N]
+    BH: [B, N, T1, T0]
+    CH: [B, N, T1, T0]
+    DH: [B, D1, D0, T1, T0]
+    UH: [B, D1, D0, T1, T0]
+    ZERO: [D0, T0]
+    I: [B, D1, D0, N, T1I]
+    DS: [B, D1, D0, T1, T0]
+    DP: [B, D1, D0, T1, T0]
+    DT: [B, D1, D0, T1, T0]
+    US: [B, D1, D0, T1, T0]
+    DU: [B, D1, D0, T1, T0]
+    AS: [B, D1, D0, N]
+    DA: [B, D1, D0, N, T1, T0]
+    EDA: [B, D1, D0, N, T1, T0]
+    BS: [B, N, T1, T0]
+    DUB: [B, D1, D0, N, T1, T0]
+    DUBT: [B, D1, D0, N, T1, T0]
+    SI: [B, D1, D0, N, T1, T0]
+    H: [B, D1, D0, N, T1, T0]
+    HT: [B, D1, D0, N, T1, T0]
+    CS: [B, N, T1, T0]
+    HC: [B, D1, D0, N, T1, T0]
+    ZS: [B, D1, D0, NI, T1, T0]
+    ZH: [B, D1, D0, T1, T0]
+    Z: [B, D1, D0, T1, T0]
+  expressions:
+    - AH[d1, d0, n] = A[d1, d0, n]
+    - BH[b, n, t1, t0] = BF[b, n, t1, t0]
+    - CH[b, n, t1, t0] = C[b, n, t1, t0]
+    - DH[b, d1, d0, t1, t0] = DF[b, d1, d0, t1, t0]
+    - UH[b, d1, d0, t1, t0] = U[b, d1, d0, t1, t0]
+    - ZERO[d0, t0] = 0
+    - I_init: I[b, d1, d0, n, 0] = 0
+    - AS[b, d1, d0, n] = AH[d1, d0, n]
+    - BS[b, n, t1, t0] = BH[b, n, t1, t0]
+    - CS[b, n, t1, t0] = CH[b, n, t1, t0]
+    - ZS_init: ZS[b, d1, d0, 0, t1, t0] = ZERO[d0, t0]
+    - DS[b, d1, d0, t1, t0] = DH[b, d1, d0, t1, t0]
+    - DP[b, d1, d0, t1, t0] = DS[b, d1, d0, t1, t0]
+    - DT[b, d1, d0, t1, t0] = DP[b, d1, d0, t1, t0]
+    - US[b, d1, d0, t1, t0] = UH[b, d1, d0, t1, t0]
+    - DU[b, d1, d0, t1, t0] = DS[b, d1, d0, t1, t0] . US[b, d1, d0, t1, t0] ;; M binary[multiply]
+    - DA[b, d1, d0, n, t1, t0] = DT[b, d1, d0, t1, t0] . AS[b, d1, d0, n] ;; M binary[multiply]
+    - EDA[b, d1, d0, n, t1, t0] = DA[b, d1, d0, n, t1, t0] ;; M unary[exp]
+    - DUB[b, d1, d0, n, t1, t0] = DU[b, d1, d0, t1, t0] . BS[b, n, t1, t0] ;; M binary[multiply]
+    - DUBT[b, d1, d0, n, t1, t0] = DUB[b, d1, d0, n, t1, t0]
+    - SI_init: SI[b, d1, d0, n, t1, 0] = I[b, d1, d0, n, t1] . EDA[b, d1, d0, n, t1, 0] ;; M binary[multiply]
+    - H_init: H[b, d1, d0, n, t1, 0] = SI[b, d1, d0, n, t1, 0] . DUBT[b, d1, d0, n, t1, 0] ;; M binary[add]
+    - SI_update: SI[b, d1, d0, n, t1, t0i + 1] = H[b, d1, d0, n, t1, t0i] . EDA[b, d1, d0, n, t1, t0i + 1] ;; M binary[multiply]
+    - H_update: H[b, d1, d0, n, t1, t0i + 1] = SI[b, d1, d0, n, t1, t0i + 1] . DUBT[b, d1, d0, n, t1, t0i + 1] ;; M binary[add]
+    - I_update: I[b, d1, d0, n, t1 + 1] = H[b, d1, d0, n, t1, T0 + -1]
+    - HT[b, d1, d0, n, t1, t0] = H[b, d1, d0, n, t1, t0]
+    - HC[b, d1, d0, n, t1, t0] = HT[b, d1, d0, n, t1, t0] . CS[b, n, t1, t0] ;; M binary[multiply]
+    - ZS_update: ZS[b, d1, d0, n + 1, t1, t0] = ZS[b, d1, d0, n + 0, t1, t0] . HC[b, d1, d0, n, t1, t0] ;; M binary[add]
+    - ZH[b, d1, d0, t1, t0] = ZS[b, d1, d0, N, t1, t0]
+    - Z[b, d1, d0, t1, t0] = ZH[b, d1, d0, t1, t0]
+  shape:
+    T0: 128
+    T0I: 127
+    D0: 128
+options:
+  kernel-name: mamba
+  cascade-outputs: [Z]
+mapping:
+  partitioning:
+    AH:
+      (D1, D0): [flatten()]
+    BH:
+      (T1, T0): [flatten()]
+    CH:
+      (T1, T0): [flatten()]
+    DH:
+      (D1, D0): [flatten()]
+      (T1, T0): [flatten()]
+    UH:
+      (D1, D0): [flatten()]
+      (T1, T0): [flatten()]
+    I_init:
+      D1: [uniform_shape(D10)]
+      (D11, N, D10): [flatten()]
+    DS:
+      D1: [uniform_shape(D10)]
+    DP:
+      D1: [uniform_shape(D10)]
+    DT:
+      D1: [uniform_shape(D10)]
+    US:
+      D1: [uniform_shape(D10)]
+    DU:
+      D1: [uniform_shape(D10)]
+    DA:
+      D1: [uniform_shape(D10)]
+    EDA:
+      D1: [uniform_shape(D10)]
+    DUB:
+      D1: [uniform_shape(D10)]
+    DUBT:
+      D1: [uniform_shape(D10)]
+    SI_init:
+      D1: [uniform_shape(D10)]
+    H_init:
+      D1: [uniform_shape(D10)]
+    SI_update:
+      D1: [uniform_shape(D10)]
+    H_update:
+      D1: [uniform_shape(D10)]
+    I_update:
+      D1: [uniform_shape(D10)]
+    HT:
+      D1: [uniform_shape(D10)]
+    HC:
+      D1: [uniform_shape(D10)]
+    ZS_update:
+      D1: [uniform_shape(D10)]
+    Z:
+      (D1, D0): [flatten()]
+      (T1, T0): [flatten()]
+  loop-order:
+    AH: [D1D0, N]
+    BH: [B, T1T0, N]
+    CH: [B, T1T0, N]
+    DH: [B, T1T0, D1D0]
+    UH: [B, T1T0, D1D0]
+    ZERO: [T0, D0]
+    I_init: [B, D0, D11ND10]
+    AS: [B, D1, D0, N]
+    DS: [B, T1, D11, D10, T0, D0]
+    DP: [B, T1, D11, D10, T0, D0]
+    DT: [B, T1, D11, D10, D0, T0]
+    US: [B, T1, D11, D10, T0, D0]
+    DU: [B, T1, D11, D10, T0, D0]
+    BS: [B, T1, T0, N]
+    CS: [B, T1, T0, N]
+    ZS_init: [B, T1, D1, T0, D0]
+    DA: [B, T1, D11, N, D10, D0, T0]
+    EDA: [B, T1, D11, N, D10, D0, T0]
+    DUB: [B, T1, D11, N, D10, T0, D0]
+    DUBT: [B, T1, D11, N, D10, T0, D0]
+    SI_init: [B, T1, D11, N, D10, D0]
+    H_init: [B, T1, D11, N, D10, D0]
+    SI_update: [B, T1, D11, N, D10, D0, T0I]
+    H_update: [B, T1, D11, N, D10, D0, T0I]
+    I_update: [B, T1, D11, N, D0, D10]
+    HT: [B, T1, D11, N, D10, D0, T0]
+    HC: [B, T1, D11, N, D10, T0, D0]
+    ZS_update: [B, T1, D11, N, D10, T0, D0]
+    ZH: [B, T1, D1, T0, D0]
+    Z: [B, T1T0, D1D0]
+  spacetime:
+    AH:
+      space: []
+      time: [D1D0, N]
+    BH:
+      space: []
+      time: [B, T1T0, N]
+    CH:
+      space: []
+      time: [B, T1T0, N]
+    DH:
+      space: []
+      time: [B, T1T0, D1D0]
+    UH:
+      space: []
+      time: [B, T1T0, D1D0]
+    ZERO:
+      space: [T0]
+      time: [D0]
+    I_init:
+      space: [D0]
+      time: [B, D11ND10]
+    AS:
+      space: [D0]
+      time: [B, D1, N]
+    DS:
+      space: [T0]
+      time: [B, T1, D11, D10, D0]
+    DP:
+      space: [T0, D0]
+      time: [B, T1, D11, D10]
+    DT:
+      space: [D0, T0]
+      time: [B, T1, D11, D10]
+    US:
+      space: [T0]
+      time: [B, T1, D11, D10, D0]
+    DU:
+      space: [T0]
+      time: [B, T1, D11, D10, D0]
+    BS:
+      space: [T0]
+      time: [B, T1, N]
+    CS:
+      space: [T0]
+      time: [B, T1, N]
+    ZS_init:
+      space: [T0]
+      time: [B, T1, D1, D0]
+    DA:
+      space: [D0]
+      time: [B, T1, D11, N, D10, T0]
+    EDA:
+      space: [D0]
+      time: [B, T1, D11, N, D10, T0]
+    DUB:
+      space: [T0]
+      time: [B, T1, D11, N, D10, D0]
+    DUBT:
+      space: [T0, D0]
+      time: [B, T1, D11, N, D10]
+    SI_init:
+      space: [D0]
+      time: [B, T1, D11, N, D10]
+    H_init:
+      space: [D0]
+      time: [B, T1, D11, N, D10]
+    SI_update:
+      space: [D0]
+      time: [B, T1, D11, N, D10, T0I]
+    H_update:
+      space: [D0]
+      time: [B, T1, D11, N, D10, T0I]
+    I_update:
+      space: [D0]
+      time: [B, T1, D11, N, D10]
+    HT:
+      space: [D0, T0]
+      time: [B, T1, D11, N, D10]
+    HC:
+      space: [T0]
+      time: [B, T1, D11, N, D10, D0]
+    ZS_update:
+      space: [T0]
+      time: [B, T1, D11, N, D10, D0]
+    ZH:
+      space: [T0]
+      time: [B, T1, D1, D0]
+    Z:
+      space: []
+      time: [B, T1T0, D1D0]
+  fusion:
+    - einsums: [AH, BH, CH, DH, UH, ZERO, I_init, AS, DS, DP, DT, US, DU, BS, CS, ZS_init, DA, EDA, DUB, DUBT, SI_init, H_init, SI_update, H_update, I_update, HT, HC, ZS_update, ZH, Z]
+      ranks:
+        - [I_init.B, AS.B, DS.B, DP.B, DT.B, US.B, DU.B, BS.B, CS.B, ZS_init.B, DA.B, EDA.B, DUB.B, DUBT.B, SI_init.B, H_init.B, SI_update.B, H_update.B, I_update.B, HT.B, HC.B, ZS_update.B, ZH.B]
+        - [DS.T1, DP.T1, DT.T1, US.T1, DU.T1, BS.T1, CS.T1, DA.T1, EDA.T1, DUB.T1, DUBT.T1, SI_init.T1, H_init.T1, SI_update.T1, H_update.T1, I_update.T1, HT.T1, HC.T1, ZS_init.T1, ZS_update.T1, ZH.T1]
+        - D11: [DS.D11, DP.D11, DT.D11, US.D11, DU.D11, DA.D11, EDA.D11, DUB.D11, DUBT.D11, SI_init.D11, H_init.D11, SI_update.D11, H_update.D11, HT.D11, HC.D11, ZS_update.D11, I_update.D11]
+        - N: [DA.N, EDA.N, DUB.N, DUBT.N, SI_init.N, H_init.N, SI_update.N, H_update.N, HT.N, HC.N, ZS_update.N, I_update.N]
+        - D_D10: [DP.D10, DT.D10]
+        - EDA_D10: [DA.D10, EDA.D10]
+        - H_D10: [SI_init.D10, H_init.D10, SI_update.D10, H_update.D10]
+        - ZS_D10: [HC.D10, ZS_update.D10]
+format:
+  AH:
+    rank-order:
+      AH: [D1D0, N]
+      AS: [D1, D0, N]
+    bit-width: 32
+    data-type: float
+  A:
+    rank-order:
+      AH: [D1D0, N]
+    bit-width: 32
+    data-type: float
+  BH:
+    rank-order:
+      BH: [B, T1T0, N]
+      BS: [B, T1, T0, N]
+    bit-width: 32
+    data-type: float
+  BF:
+    rank-order:
+      BH: [B, T1T0, N]
+    bit-width: 32
+    data-type: float
+  CH:
+    rank-order:
+      CH: [B, T1T0, N]
+      CS: [B, T1, T0, N]
+    bit-width: 32
+    data-type: float
+  C:
+    rank-order:
+      CH: [B, T1T0, N]
+    bit-width: 32
+    data-type: float
+  DH:
+    rank-order:
+      DH: [B, T1T0, D1D0]
+      DS: [B, T1, T0, D11, D10, D0]
+    bit-width: 32
+    data-type: float
+  DF:
+    rank-order:
+      DH: [B, T1T0, D1D0]
+    bit-width: 32
+    data-type: float
+  UH:
+    rank-order:
+      UH: [B, T1T0, D1D0]
+      US: [B, T1, T0, D11, D10, D0]
+    bit-width: 32
+    data-type: float
+  U:
+    rank-order:
+      UH: [B, T1T0, D1D0]
+    bit-width: 32
+    data-type: float
+  ZERO:
+    rank-order:
+      ZERO: [T0, D0]
+      ZS_init: [T0, D0]
+    bit-width: 32
+    data-type: float
+  I:
+    rank-order:
+      I_init: [B, T1I, D11ND10, D0]
+      SI_init: [B, T1I, D11, N, D10, D0]
+      I_update: [B, T1I, D11, N, D10, D0]
+    bit-width: 32
+    data-type: float
+  AS:
+    rank-order:
+      AS: [B, D1, N, D0]
+      DA: [B, D11, D10, N, D0]
+    bit-width: 32
+    data-type: float
+  DS:
+    rank-order:
+      DS: [B, T1, D11, D10, T0, D0]
+      DU: [B, T1, D11, D10, T0, D0]
+      DP: [B, T1, D11, D10, T0, D0]
+    bit-width: 32
+    data-type: float
+  DP:
+    rank-order:
+      DP: [B, T1, D11, D10, D0, T0]
+      DT: [B, T1, D11, D10, D0, T0]
+    bit-width: 32
+    data-type: float
+  DT:
+    rank-order:
+      DT: [B, T1, D11, D10, D0, T0]
+      DA: [B, T1, D11, D10, D0, T0]
+    bit-width: 32
+    data-type: float
+  US:
+    rank-order:
+      US: [B, T1, D11, D10, T0, D0]
+      DU: [B, T1, D11, D10, T0, D0]
+    bit-width: 32
+    data-type: float
+  DU:
+    rank-order:
+      DU: [B, T1, D11, D10, T0, D0]
+      DUB: [B, T1, D11, D10, T0, D0]
+    bit-width: 32
+    data-type: float
+  BS:
+    rank-order:
+      BS: [B, T1, T0, N]
+      DUB: [B, T1, T0, N]
+    bit-width: 32
+    data-type: float
+  CS:
+    rank-order:
+      CS: [B, T1, T0, N]
+      HC: [B, T1, T0, N]
+    bit-width: 32
+    data-type: float
+  ZS:
+    rank-order:
+      ZS_init: [B, T1, NI, D1, T0, D0]
+      ZS_update: [B, T1, NI, D11, D10, T0, D0]
+      ZH: [B, T1, NI, D1, T0, D0]
+    bit-width: 32
+    data-type: float
+  DA:
+    rank-order:
+      DA: [B, T1, D11, N, D10, T0, D0]
+      EDA: [B, T1, D11, N, D10, T0, D0]
+    bit-width: 32
+    data-type: float
+  EDA:
+    rank-order:
+      EDA: [B, T1, D11, N, D10, D0, T0]
+      SI_init: [B, T1, D11, N, D10, D0, T0]
+      SI_update: [B, T1, D11, N, D10, D0, T0]
+    bit-width: 32
+    data-type: float
+  DUB:
+    rank-order:
+      DUB: [B, T1, D11, N, D10, T0, D0]
+      DUBT: [B, T1, D11, N, D10, T0, D0]
+    bit-width: 32
+    data-type: float
+  DUBT:
+    rank-order:
+      DUBT: [B, T1, D11, N, D10, D0, T0]
+      H_init: [B, T1, D11, N, D10, D0, T0]
+      H_update: [B, T1, D11, N, D10, D0, T0]
+    bit-width: 32
+    data-type: float
+  SI:
+    rank-order:
+      SI_init: [B, T1, D11, N, D10, T0, D0]
+      H_init: [B, T1, D11, N, D10, T0, D0]
+      SI_update: [B, T1, D11, N, D10, T0, D0]
+      H_update: [B, T1, D11, N, D10, T0, D0]
+    bit-width: 32
+    data-type: float
+  H:
+    rank-order:
+      H_init: [B, T1, D11, N, D10, D0, T0]
+      SI_update: [B, T1, D11, N, D10, D0, T0]
+      H_update: [B, T1, D11, N, D10, D0, T0]
+      I_update: [B, T1, D11, N, D10, D0, T0]
+      HT: [B, T1, D11, N, D10, D0, T0]
+    bit-width: 32
+    data-type: float
+  HT:
+    rank-order:
+      HT: [B, T1, D11, N, D10, T0, D0]
+      HC: [B, T1, D11, N, D10, T0, D0]
+    bit-width: 32
+    data-type: float
+  HC:
+    rank-order:
+      HC: [B, T1, D11, N, D10, D0, T0]
+      ZS_update: [B, T1, D11, N, D10, D0, T0]
+    bit-width: 32
+    data-type: float
+  ZH:
+    rank-order:
+      ZH: [B, T1, T0, D1, D0]
+      Z: [B, T1T0, D1D0]
+    bit-width: 32
+    data-type: float
+  Z:
+    rank-order:
+      Z: [B, T1T0, D1D0]
+    bit-width: 32
+    data-type: float
+binding:
+  engine:
+    - einsum: AH
+      ranks: [D1D0, N]
+      component: None
+      instruction: RenameHBM2D
+    - einsum: BH
+      ranks: [B, T1T0, N]
+      component: None
+      instruction: RenameHBM3D
+    - einsum: CH
+      ranks: [B, T1T0, N]
+      component: None
+      instruction: RenameHBM3D
+    - einsum: DH
+      ranks: [B, T1T0, D1D0]
+      component: None
+      instruction: RenameHBM3D
+    - einsum: UH
+      ranks: [B, T1T0, D1D0]
+      component: None
+      instruction: RenameHBM3D
+    - einsum: ZERO
+      ranks: [T0, D0]
+      component: VectorEngine
+      instruction: MemSet
+    - einsum: I_init
+      ranks: [D0, D11ND10]
+      component: VectorEngine
+      instruction: MemSet
+    - einsum: AS
+      ranks: [D0, N]
+      component: DMAEngine
+      instruction: Load
+    - einsum: DS
+      ranks: [T0, D0]
+      component: DMAEngine
+      instruction: Load
+    - einsum: DP
+      ranks: [T0, D0]
+      component: TensorEngine
+      instruction: Transpose32
+    - einsum: DT
+      ranks: [D0, T0]
+      component: ScalarEngine
+      instruction: TensorCopy
+    - einsum: US
+      ranks: [T0, D0]
+      component: DMAEngine
+      instruction: Load
+    - einsum: DU
+      ranks: [T0, D0]
+      component: VectorEngine
+      instruction: TensorTensorSS
+    - einsum: BS
+      ranks: [T0, N]
+      component: DMAEngine
+      instruction: Load
+    - einsum: CS
+      ranks: [T0, N]
+      component: DMAEngine
+      instruction: Load
+    - einsum: ZS_init
+      ranks: [T0, D0]
+      component: ScalarEngine
+      instruction: TensorCopy
+    - einsums: [DA, EDA]
+      ranks:
+        DA: [D0, T0]
+        EDA: [D0, T0]
+      component: ScalarEngine
+      instruction: ScaledUnary
+    - einsum: DUB
+      ranks: [T0, D0]
+      component: ScalarEngine
+      instruction: TensorScalarMultiply
+    - einsum: DUBT
+      ranks: [T0, D0]
+      component: TensorEngine
+      instruction: Transpose32
+    - einsums: [SI_init, H_init, SI_update, H_update]
+      ranks:
+        SI_init: [D0]
+        H_init: [D0]
+        SI_update: [D0, T0I]
+        H_update: [D0, T0I]
+      component: VectorEngine
+      instruction: TensorTensorScanSP
+    - einsum: I_update
+      ranks: [D0, D10]
+      component: ScalarEngine
+      instruction: TensorCopy
+    - einsum: HT
+      ranks: [D0, T0]
+      component: TensorEngine
+      instruction: Transpose32
+    - einsums: [HC, ZS_update]
+      ranks:
+        HC: [T0, D0]
+        ZS_update: [T0, D0]
+      component: VectorEngine
+      instruction: TensorTensorScalarSP
+    - einsum: ZH
+      ranks: [T0, D0]
+      component: DMAEngine
+      instruction: Store
+    - einsum: Z
+      ranks: [B, T1T0, D1D0]
+      component: None
+      instruction: RenameHBM3D
+  tensor:
+    - name: AH
+      einsum: AH
+      component:
+        name: HBM
+      constructor: none
+      ranks:
+        unbound: []
+        bound: [D1D0, N]
+    - name: AH
+      einsum: AS
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [D1, D0, N]
+    - name: A
+      einsum: AH
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [D1D0, N]
+    - name: BH
+      einsum: BH
+      component:
+        name: HBM
+      constructor: none
+      ranks:
+        unbound: []
+        bound: [B, T1T0, N]
+    - name: BH
+      einsum: BS
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [B, T1, T0, N]
+    - name: BF
+      einsum: BH
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [B, T1T0, N]
+    - name: CH
+      einsum: CH
+      component:
+        name: HBM
+      constructor: none
+      ranks:
+        unbound: []
+        bound: [B, T1T0, N]
+    - name: CH
+      einsum: CS
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [B, T1, T0, N]
+    - name: C
+      einsum: CH
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [B, T1T0, N]
+    - name: DH
+      einsum: DH
+      component:
+        name: HBM
+      constructor: none
+      ranks:
+        unbound: []
+        bound: [B, T1T0, D1D0]
+    - name: DH
+      einsum: DS
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [B, T1, T0, D11, D10, D0]
+    - name: DF
+      einsum: DH
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [B, T1T0, D1D0]
+    - name: UH
+      einsum: UH
+      component:
+        name: HBM
+      constructor: none
+      ranks:
+        unbound: []
+        bound: [B, T1T0, D1D0]
+    - name: UH
+      einsum: US
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [B, T1, T0, D11, D10, D0]
+    - name: U
+      einsum: UH
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [B, T1T0, D1D0]
+    - name: ZERO
+      einsum: ZERO
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: []
+        partition: [T0]
+        free: [D0]
+    - name: ZERO
+      einsum: ZS_init
+      component:
+        name: SBUF
+      ranks:
+        unbound: []
+        partition: [T0]
+        free: [D0]
+    - name: I
+      einsum: I_init
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [B, T1I]
+        partition: [D0]
+        free: [D11ND10]
+    - name: I
+      einsum: SI_init
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1I]
+        partition: [D0]
+        free: [D11, N, D10]
+    - name: I
+      einsum: I_update
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1I]
+        partition: [D0]
+        free: [D11, N, D10]
+    - name: AS
+      einsum: AS
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [B]
+        partition: [D0]
+        free: [D1, N]
+    - name: AS
+      einsum: DA
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B]
+        partition: [D0]
+        free: [D11, D10, N]
+    - name: DS
+      einsum: DS
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [B, T1, D11]
+        partition: [T0]
+        free: [D10, D0]
+    - name: DS
+      einsum: DU
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, D11]
+        partition: [T0]
+        free: [D10, D0]
+    - name: DS
+      einsum: DP
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, D11]
+        partition: [T0]
+        free: [D10, D0]
+    - name: DP
+      einsum: DP
+      component:
+        name: PSUM
+      constructor: empty
+      ranks:
+        unbound: [B, T1, D11, D10]
+        partition: [D0]
+        free: [T0]
+    - name: DP
+      einsum: DT
+      component:
+        name: PSUM
+      ranks:
+        unbound: [B, T1, D11, D10]
+        partition: [D0]
+        free: [T0]
+    - name: DT
+      einsum: DT
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [B, T1, D11]
+        partition: [D0]
+        free: [D10, T0]
+    - name: DT
+      einsum: DA
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, D11]
+        partition: [D0]
+        free: [D10, T0]
+    - name: US
+      einsum: US
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [B, T1, D11]
+        partition: [T0]
+        free: [D10, D0]
+    - name: US
+      einsum: DU
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, D11]
+        partition: [T0]
+        free: [D10, D0]
+    - name: DU
+      einsum: DU
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [B, T1, D11]
+        partition: [T0]
+        free: [D10, D0]
+    - name: DU
+      einsum: DUB
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, D11]
+        partition: [T0]
+        free: [D10, D0]
+    - name: BS
+      einsum: BS
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [B, T1]
+        partition: [T0]
+        free: [N]
+    - name: BS
+      einsum: DUB
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1]
+        partition: [T0]
+        free: [N]
+    - name: CS
+      einsum: CS
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [B, T1]
+        partition: [T0]
+        free: [N]
+    - name: CS
+      einsum: HC
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1]
+        partition: [T0]
+        free: [N]
+    - name: ZS
+      einsum: ZS_init
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [B, T1, NI]
+        partition: [T0]
+        free: [D1, D0]
+    - name: ZS
+      einsum: ZS_update
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, NI]
+        partition: [T0]
+        free: [D11, D10, D0]
+    - name: ZS
+      einsum: ZH
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, NI]
+        partition: [T0]
+        free: [D1, D0]
+    - name: DA
+      einsum: DA
+      component:
+        name: ScalarEnginePipelineRegisters
+      constructor: default
+      ranks:
+        unbound: [B, T1, D11, N, D10, T0]
+        partition: [D0]
+        registers: []
+    - name: DA
+      einsum: EDA
+      component:
+        name: ScalarEnginePipelineRegisters
+      ranks:
+        unbound: [B, T1, D11, N, D10, T0]
+        partition: [D0]
+        registers: []
+    - name: EDA
+      einsum: EDA
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [D0]
+        free: [D10, T0]
+    - name: EDA
+      einsum: SI_init
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [D0]
+        free: [D10, T0]
+    - name: EDA
+      einsum: SI_update
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [D0]
+        free: [D10, T0]
+    - name: DUB
+      einsum: DUB
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [D0]
+        free: [D10, T0]
+    - name: DUB
+      einsum: DUBT
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [D0]
+        free: [D10, T0]
+    - name: DUBT
+      einsum: DUBT
+      component:
+        name: PSUM
+      constructor: empty
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [T0]
+        free: [D10, D0]
+    - name: DUBT
+      einsum: H_init
+      component:
+        name: PSUM
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [T0]
+        free: [D10, D0]
+    - name: DUBT
+      einsum: H_update
+      component:
+        name: PSUM
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [T0]
+        free: [D10, D0]
+    - name: SI
+      einsum: SI_init
+      component:
+        name: VectorEnginePipelineRegisters
+      constructor: default
+      ranks:
+        unbound: [B, T1, D11, N, D10, T0]
+        partition: [D0]
+        registers: []
+    - name: SI
+      einsum: H_init
+      component:
+        name: VectorEnginePipelineRegisters
+      ranks:
+        unbound: [B, T1, D11, N, D10, T0]
+        partition: [D0]
+        registers: []
+    - name: SI
+      einsum: SI_update
+      component:
+        name: VectorEnginePipelineRegisters
+      ranks:
+        unbound: [B, T1, D11, N, D10, T0]
+        partition: [D0]
+        registers: []
+    - name: SI
+      einsum: H_update
+      component:
+        name: VectorEnginePipelineRegisters
+      ranks:
+        unbound: [B, T1, D11, N, D10, T0]
+        partition: [D0]
+        registers: []
+    - name: H
+      einsum: H_init
+      component:
+        name: SBUF
+      constructor: empty
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [D0]
+        free: [D10, T0]
+    - name: H
+      einsum: SI_update
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [D0]
+        free: [D10, T0]
+    - name: H
+      einsum: H_update
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [D0]
+        free: [D10, T0]
+    - name: H
+      einsum: I_update
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [D0]
+        free: [D10, T0]
+    - name: H
+      einsum: HT
+      component:
+        name: SBUF
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [D0]
+        free: [D10, T0]
+    - name: HT
+      einsum: HT
+      component:
+        name: PSUM
+      constructor: empty
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [T0]
+        free: [D10, D0]
+    - name: HT
+      einsum: HC
+      component:
+        name: PSUM
+      ranks:
+        unbound: [B, T1, D11, N]
+        partition: [T0]
+        free: [D10, D0]
+    - name: HC
+      einsum: HC
+      component:
+        name: VectorEnginePipelineRegisters
+      constructor: default
+      ranks:
+        unbound: [B, T1, D11, N, D10, D0]
+        partition: [T0]
+        registers: []
+    - name: HC
+      einsum: ZS_update
+      component:
+        name: VectorEnginePipelineRegisters
+      ranks:
+        unbound: [B, T1, D11, N, D10, D0]
+        partition: [T0]
+        registers: []
+    - name: ZH
+      einsum: ZH
+      component:
+        name: HBM
+      constructor: empty
+      ranks:
+        unbound: []
+        bound: [B, T1, T0, D1, D0]
+    - name: ZH
+      einsum: Z
+      component:
+        name: HBM
+      ranks:
+        unbound: []
+        bound: [B, T1T0, D1D0]
+    - name: Z
+      einsum: Z
+      component:
+        name: HBM
+      constructor: none
+      ranks:
+        unbound: []
+        bound: [B, T1T0, D1D0]

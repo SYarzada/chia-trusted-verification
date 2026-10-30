@@ -1,0 +1,14 @@
+schema_version: 1
+backend: rtl_formal
+target: Gemmini-inspired example target
+intents:
+  - intent_id: example_queue_issue
+    category: queue_dependency
+    title: example test for dependency-gated issue
+    requirement: issue_valid may be high only when the entry is allocated, not already issued, and has no unresolved dependencies.
+    target_module: GemminiFormalExample
+    signal_hints: [issue_valid, allocated, issued, deps]
+    required_signals: [issue_valid, allocated, issued, deps]
+    required_property_kinds: [assert, cover]
+    proof_depth: 8
+    rationale: Small deterministic target used only to validate the Backend II tool path before Gemmini elaboration.

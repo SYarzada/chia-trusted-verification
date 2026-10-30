@@ -1,0 +1,308 @@
+einsum:
+  declaration:
+    AH:
+    - K
+    - M
+    - N
+    AS:
+    - K
+    - M
+    - N
+    ZS:
+    - K
+    - M
+    - N
+    RS:
+    - M
+    - N
+    ZH:
+    - K
+    - M
+    - N
+    RH:
+    - M
+    - N
+  expressions:
+  - AS[k, m, n] = AH[k, m, n]
+  - ZS[k, m, n] = AS[k, m, n] ;; M unary[square]
+  - RS[m, n] = ZS[k, m, n] ;; V binary[add]
+  - ZH[k, m, n] = ZS[k, m, n]
+  - RH[m, n] = RS[m, n]
+  shape:
+    K: 512
+    M: 2
+    N: 128
+options:
+  kernel-name: unary_reduce_one_tile
+  cascade-outputs:
+  - ZH
+  - RH
+mapping:
+  loop-order:
+    AS:
+    - M
+    - N
+    - K
+    ZS:
+    - M
+    - N
+    - K
+    RS:
+    - M
+    - N
+    - K
+    ZH:
+    - M
+    - N
+    - K
+    RH:
+    - N
+    - M
+  spacetime:
+    AS:
+      space:
+      - N
+      time:
+      - M
+      - K
+    ZS:
+      space:
+      - N
+      time:
+      - M
+      - K
+    RS:
+      space:
+      - N
+      time:
+      - M
+      - K
+    ZH:
+      space:
+      - N
+      time:
+      - M
+      - K
+    RH:
+      space:
+      - N
+      time:
+      - M
+  fusion:
+  - einsums:
+    - AS
+    - ZS
+    - RS
+    - ZH
+    - RH
+    ranks:
+    - - ZS.M
+      - RS.M
+    - - ZS.N
+      - RS.N
+    - - ZS.K
+      - RS.K
+format:
+  AS:
+    rank-order:
+      AS:
+      - M
+      - N
+      - K
+      ZS:
+      - M
+      - N
+      - K
+    bit-width: 16
+    data-type: float
+  AH:
+    rank-order:
+      AS:
+      - M
+      - N
+      - K
+    bit-width: 16
+    data-type: float
+  ZS:
+    rank-order:
+      ZS:
+      - M
+      - N
+      - K
+      RS:
+      - M
+      - N
+      - K
+      ZH:
+      - M
+      - N
+      - K
+    bit-width: 16
+    data-type: float
+  RS:
+    rank-order:
+      RS:
+      - M
+      - N
+      RH:
+      - M
+      - N
+    bit-width: 16
+    data-type: float
+  ZH:
+    rank-order:
+      ZH:
+      - M
+      - N
+      - K
+    bit-width: 16
+    data-type: float
+  RH:
+    rank-order:
+      RH:
+      - N
+      - M
+    bit-width: 16
+    data-type: float
+binding:
+  engine:
+  - einsum: AS
+    ranks:
+    - N
+    - K
+    component: DMAEngine
+    instruction: Load
+  - einsums:
+    - ZS
+    - RS
+    ranks:
+      ZS:
+      - N
+      - K
+      RS:
+      - N
+      - K
+    component: ScalarEngine
+    instruction: UnaryReduce
+  - einsum: ZH
+    ranks:
+    - N
+    - K
+    component: DMAEngine
+    instruction: Store
+  - einsum: RH
+    ranks:
+    - N
+    - M
+    component: DMAEngine
+    instruction: Store
+  tensor:
+  - name: AS
+    einsum: AS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound: []
+      partition:
+      - N
+      free:
+      - M
+      - K
+  - name: AS
+    einsum: ZS
+    component:
+      name: SBUF
+    ranks:
+      unbound: []
+      partition:
+      - N
+      free:
+      - M
+      - K
+  - name: AH
+    einsum: AS
+    component:
+      name: HBM
+    ranks:
+      unbound: []
+      bound:
+      - M
+      - N
+      - K
+  - name: ZS
+    einsum: ZS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound: []
+      partition:
+      - N
+      free:
+      - M
+      - K
+  - name: ZS
+    einsum: RS
+    component:
+      name: SBUF
+    ranks:
+      unbound: []
+      partition:
+      - N
+      free:
+      - M
+      - K
+  - name: ZS
+    einsum: ZH
+    component:
+      name: SBUF
+    ranks:
+      unbound: []
+      partition:
+      - N
+      free:
+      - M
+      - K
+  - name: RS
+    einsum: RS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound: []
+      partition:
+      - N
+      free:
+      - M
+  - name: RS
+    einsum: RH
+    component:
+      name: SBUF
+    ranks:
+      unbound: []
+      partition:
+      - N
+      free:
+      - M
+  - name: ZH
+    einsum: ZH
+    component:
+      name: HBM
+    constructor: empty
+    ranks:
+      unbound: []
+      bound:
+      - M
+      - N
+      - K
+  - name: RH
+    einsum: RH
+    component:
+      name: HBM
+    constructor: empty
+    ranks:
+      unbound: []
+      bound:
+      - N
+      - M

@@ -1,0 +1,5 @@
+model,backend,candidates,obligations,weighted_cache_hit_pct,mean_recorded_cache_hit_pct,syntactic_legality_reuse_pct,rewrite_legality_reuse_pct,additional_rewrite_reuse,rewrite_recovered_pct_of_syntactic_misses,fallback_count
+Gemini 3.1 Pro,hierarchical_delta_syntactic,7140,808981,96.1128876945194,71.3922901269664,98.3764057868572,98.3764057868572,0,0.0,0
+Gemini 3.1 Pro,hierarchical_delta_egraph,7140,808981,96.3835986259257,71.67816168741035,98.3764057868572,98.74150192884126,2190,22.486908306807678,0
+Gemini 3.5 Flash,hierarchical_delta_syntactic,9489,979207,95.91363215336492,70.24561629488954,98.42364803059168,98.42364803059168,0,0.0,0
+Gemini 3.5 Flash,hierarchical_delta_egraph,9489,979207,96.2751491768339,70.60955134027691,98.42364803059168,98.91058397925708,3540,30.89005235602094,0

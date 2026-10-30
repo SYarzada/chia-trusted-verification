@@ -1,0 +1,21 @@
+max_iterations: 30
+checkpoint_interval: 5
+diff_based_generation: true
+max_solution_length: 120000
+search:
+  type: openevolve
+llm:
+  models:
+  - name: google/gemini-3.5-flash
+    weight: 1.0
+    temperature: 0.35
+  max_tokens: 6000
+  timeout: 120
+  retries: 3
+  retry_delay: 5
+evaluator:
+  timeout: 360
+  max_retries: 1
+  cascade_evaluation: false
+monitor:
+  enabled: false

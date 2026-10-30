@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chia-trusted-verification"
+version = "0.6.8"
+description = "Reusable CHIA loop with pluggable search strategies and trusted verification backends"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "PyYAML>=6.0",
+  "lark>=1.1",
+  "networkx>=3.0",
+  "pydantic>=2.0",
+  "ruamel-yaml>=0.18",
+  "sympy>=1.12",
+  "z3-solver>=4.12",
+]
+
+[project.optional-dependencies]
+search = [
+  "evolve-flows @ git+https://github.com/ucb-bar/evolve-flows.git@main",
+  "alpha-evolve @ git+https://github.com/Google-Cloud-AI/alphaevolve-on-googlecloud.git@main",
+  "openevolve @ git+https://github.com/algorithmicsuperintelligence/openevolve.git@main",
+  "skydiscover @ git+https://github.com/ucb-bar/skydiscover.git@78833ea6ad4ee1efffe5781112da4ceb95ff5535",
+  "openai>=1.107.1",
+  "google-auth[requests]>=2.0",
+]
+test = ["pytest>=8.0"]
+analysis = ["pandas>=2.0", "matplotlib>=3.8"]
+
+[project.scripts]
+chia-trusted-verify = "chia_trusted_verification.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+pythonpath = ["."]

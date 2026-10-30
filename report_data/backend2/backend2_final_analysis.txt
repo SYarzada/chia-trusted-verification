@@ -1,0 +1,155 @@
+========================================================================
+BACKEND II FINAL ANALYSIS
+========================================================================
+runs found: 72
+
+========================================================================
+OVERALL FINAL RESULTS
+========================================================================
+proved                24 /  72 =  33.3%
+counterexample        35 /  72 =  48.6%
+timeout                7 /  72 =   9.7%
+compile_error          6 /  72 =   8.3%
+
+compile success: 66/72 = 91.7%
+proved:          24/72 = 33.3%
+proved | compiled: 24/66 = 36.4%
+
+========================================================================
+PER-INTENT RESULTS
+========================================================================
+C1_load_config_no_dma                            proved=3 cex=0 timeout=0 compile_error=0
+  200:proved, 201:proved, 202:proved
+C2_load_completion_after_tracker                 proved=3 cex=0 timeout=0 compile_error=0
+  200:proved, 201:proved, 202:proved
+C3_execute_busy_tracks_outstanding_work          proved=0 cex=0 timeout=3 compile_error=0
+  200:timeout, 201:timeout, 202:timeout
+C4_single_transposer_exclusive                   proved=0 cex=0 timeout=3 compile_error=0
+  200:timeout, 201:timeout, 202:timeout
+C5_load_command_eventually_releases              proved=1 cex=2 timeout=0 compile_error=0
+  200:counterexample, 201:counterexample, 202:proved
+C6_completion_rob_id_is_live                     proved=3 cex=0 timeout=0 compile_error=0
+  200:proved, 201:proved, 202:proved
+I1_decoupled_stall_stability                     proved=0 cex=3 timeout=0 compile_error=0
+  200:counterexample, 201:counterexample, 202:counterexample
+I2_request_consumed_only_on_handshake            proved=1 cex=2 timeout=0 compile_error=0
+  200:counterexample, 201:counterexample, 202:proved
+I3_completion_only_for_accepted_work             proved=3 cex=0 timeout=0 compile_error=0
+  200:proved, 201:proved, 202:proved
+I4_dma_response_matches_tracked_command          proved=1 cex=2 timeout=0 compile_error=0
+  200:counterexample, 201:proved, 202:counterexample
+I5_reset_returns_idle                            proved=0 cex=3 timeout=0 compile_error=0
+  200:counterexample, 201:counterexample, 202:counterexample
+I6_meaningful_transaction_reachable              proved=3 cex=0 timeout=0 compile_error=0
+  200:proved, 201:proved, 202:proved
+M1_single_port_no_read_write_conflict            proved=3 cex=0 timeout=0 compile_error=0
+  200:proved, 201:proved, 202:proved
+M2_external_scratchpad_dma_queue_tracks_reads    proved=0 cex=3 timeout=0 compile_error=0
+  200:counterexample, 201:counterexample, 202:counterexample
+M3_accumulator_write_not_dropped                 proved=0 cex=0 timeout=0 compile_error=3
+  200:compile_error, 201:compile_error, 202:compile_error
+M4_load_dma_nonzero_transfer                     proved=0 cex=2 timeout=1 compile_error=0
+  200:timeout, 201:counterexample, 202:counterexample
+M5_full_width_acc_no_block_mvout                 proved=0 cex=3 timeout=0 compile_error=0
+  200:counterexample, 201:counterexample, 202:counterexample
+M6_pooling_no_block_mvout                        proved=0 cex=3 timeout=0 compile_error=0
+  200:counterexample, 201:counterexample, 202:counterexample
+Q1_no_issue_with_dependencies                    proved=0 cex=3 timeout=0 compile_error=0
+  200:counterexample, 201:counterexample, 202:counterexample
+Q2_issue_only_valid_entry                        proved=0 cex=3 timeout=0 compile_error=0
+  200:counterexample, 201:counterexample, 202:counterexample
+Q3_oldest_ready_priority                         proved=0 cex=1 timeout=0 compile_error=2
+  200:compile_error, 201:compile_error, 202:counterexample
+Q4_completion_releases_entry                     proved=2 cex=1 timeout=0 compile_error=0
+  200:proved, 201:proved, 202:counterexample
+Q5_complete_on_issue_releases_entry              proved=0 cex=2 timeout=0 compile_error=1
+  200:counterexample, 201:compile_error, 202:counterexample
+Q6_full_queue_blocks_allocation                  proved=1 cex=2 timeout=0 compile_error=0
+  200:proved, 201:counterexample, 202:counterexample
+
+========================================================================
+PROPOSAL ACCOUNTING
+========================================================================
+proposal rows found: 288
+expected maximum:    288
+runs with 4 proposals: 72/72
+proposals/run: min=4 max=4 mean=4.00
+
+========================================================================
+FIRST PROPOSAL -> FINAL RESULT
+========================================================================
+ 17  counterexample       -> counterexample
+ 11  not_run              -> counterexample
+ 10  not_run              -> proved
+  7  compile_error        -> counterexample
+  7  compile_error        -> proved
+  6  timeout              -> timeout
+  4  not_run              -> compile_error
+  4  proved               -> proved
+  3  counterexample       -> proved
+  2  compile_error        -> compile_error
+  1  counterexample       -> timeout
+
+First-proposal compile success: 31/72 (43.1%)
+First-proposal proved:          4/72 (5.6%)
+Final compile success:          66/72 (91.7%)
+Final proved:                   24/72 (33.3%)
+
+========================================================================
+WITHIN-RUN REPAIR
+========================================================================
+first compile failure -> compiled final: 35
+first counterexample -> proved final:    3
+first timeout -> proved final:           0
+first compile_error -> proved final:     7
+runs containing any proved proposal:    25/72
+runs first proving after attempt 1:      21/72
+
+========================================================================
+OUTCOME BY PROPOSAL ATTEMPT
+========================================================================
+attempt 1: n=72
+  compile success = 31/72 (43.1%)
+  proved          = 4/72 (5.6%)
+  compile_error       16
+  counterexample      21
+  not_run             25
+  proved               4
+  timeout              6
+attempt 2: n=72
+  compile success = 31/72 (43.1%)
+  proved          = 11/72 (15.3%)
+  compile_error       15
+  counterexample      16
+  not_run             26
+  proved              11
+  timeout              4
+attempt 3: n=72
+  compile success = 45/72 (62.5%)
+  proved          = 13/72 (18.1%)
+  compile_error       20
+  counterexample      29
+  not_run              7
+  proved              13
+  timeout              3
+attempt 4: n=72
+  compile success = 53/72 (73.6%)
+  proved          = 18/72 (25.0%)
+  compile_error       12
+  counterexample      30
+  not_run              7
+  proved              18
+  timeout              5
+
+========================================================================
+INTENT-LEVEL PROOF COVERAGE
+========================================================================
+intents with >=1 proved seed: 11/24 (45.8%)
+intents proved in all 3 seeds: 6/24 (25.0%)
+
+========================================================================
+INFRASTRUCTURE SANITY CHECK
+========================================================================
+No final tool_error/infrastructure_error results found.
+
+Analysis complete.

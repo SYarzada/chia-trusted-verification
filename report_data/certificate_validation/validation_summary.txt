@@ -1,0 +1,1 @@
+{"evidence_files": 18, "invalid_certificates": 0, "root": "artifacts", "skipped_without_certificate": 0, "valid_certificates": 18}

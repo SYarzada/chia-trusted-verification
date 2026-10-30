@@ -1,0 +1,60 @@
+experiment:
+  name: teaal_chia_smoke
+  engine: openevolve
+  seed: 0
+  iterations: 20
+  model: null
+  output_dir: ../runs/attention
+  cost_tracking:
+    currency: USD
+    input_per_million_tokens_usd: null
+    output_per_million_tokens_usd: null
+    compute_hourly_usd: null
+    manual_llm_cost_usd: null
+    manual_compute_cost_usd: null
+    manual_storage_cost_usd: null
+    manual_other_cost_usd: null
+    manual_cloud_credit_used_usd: null
+    billing_source: null
+    pricing_as_of: null
+    note: Enter current provider rates if costs are not reported automatically.
+backend:
+  name: teaal_evolve
+  settings:
+    root: ../teaal_evolve
+    kernel_label: attention
+    kernel_file: ../teaal_evolve/example/kernel/nki/attention.yaml
+    architecture_file: ../teaal_evolve/example/arch/trainium1.yaml
+    checker_backend: hierarchical
+    objective_backend: monolithic_bottleneck
+    knob_space: rich
+    min_mutations: 1
+    max_mutations: 2
+    catalog_seed: 0
+    node_timeout_s: 300
+  resources:
+    prepare:
+      teaal_evolve: 1
+    verify:
+      teaal_evolve: 1
+    evaluate:
+      teaal_evolve: 1
+    feedback:
+      teaal_evolve: 1
+verification:
+  intent:
+    intent_id: teaal_structured_design
+    artifact_type: structured_accelerator_candidate
+    requirements:
+    - mapping_format_binding_legality
+    - local_semantics
+    - producer_consumer_interfaces
+    - structured_resource_legality
+    parameters: {}
+search:
+  configs:
+    structured_random: search/structured_random.yaml
+    structured_walk: search/structured_walk.yaml
+    openevolve: search/openevolve.yaml
+    alphaevolve: search/alphaevolve.yaml
+    llm_agent: search/llm_agent.yaml

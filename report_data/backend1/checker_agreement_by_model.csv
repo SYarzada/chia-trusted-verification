@@ -1,0 +1,7 @@
+model,backend,candidates,agreements,false_accepts,false_rejects,objective_mismatches,agreement_pct
+Gemini 3.1 Pro,hierarchical,7140,7140,0,0,0,100.0
+Gemini 3.1 Pro,hierarchical_delta_egraph,7140,7140,0,0,0,100.0
+Gemini 3.1 Pro,hierarchical_delta_syntactic,7140,7140,0,0,0,100.0
+Gemini 3.5 Flash,hierarchical,9489,9489,0,0,0,100.0
+Gemini 3.5 Flash,hierarchical_delta_egraph,9489,9489,0,0,0,100.0
+Gemini 3.5 Flash,hierarchical_delta_syntactic,9489,9489,0,0,0,100.0

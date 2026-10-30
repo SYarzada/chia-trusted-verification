@@ -1,0 +1,3 @@
+backend,candidates,obligations,weighted_cache_hit_pct,mean_recorded_cache_hit_pct,syntactic_legality_reuse_pct,rewrite_legality_reuse_pct,additional_rewrite_reuse,rewrite_recovered_pct_of_syntactic_misses,fallback_count
+hierarchical_delta_syntactic,16629,1788188,96.00377588933601,70.73796407052421,98.40229056018185,98.40229056018185,0,0.0,0
+hierarchical_delta_egraph,16629,1788188,96.32421199560672,71.0683809679474,98.40229056018185,98.83414466132615,5730,27.029576866833345,0

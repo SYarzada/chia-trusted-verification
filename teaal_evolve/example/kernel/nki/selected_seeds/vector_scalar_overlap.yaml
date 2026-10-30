@@ -1,0 +1,373 @@
+einsum:
+  declaration:
+    AH:
+    - M
+    - N
+    - P
+    AS:
+    - M
+    - N
+    - P
+    AT:
+    - M
+    - N
+    - Q
+    - P
+    BS:
+    - M
+    - N
+    - Q
+    - P
+    ZS:
+    - M
+    - N
+    - Q
+    - PI
+    ZH:
+    - M
+    - N
+    - Q
+  expressions:
+  - AS[m, n, p] = AH[m, n, p]
+  - AT[m, n, q, p] = AS[m, n, p]
+  - BS[m, n, q, p] = AT[m, n, q, p] ;; M unary[exp]
+  - ZS_init: ZS[m, n, q, 0] = 0
+  - ZS[m, n, q, p + 1] = ZS[m, n, q, p + 0] . BS[m, n, q, p] ;; M binary[add]
+  - ZH[m, n, q] = ZS[m, n, q, P]
+  shape:
+    M: 128
+    N: 128
+    Q: 32
+options:
+  cascade-outputs:
+  - ZH
+  kernel-name: vector_scalar_overlap
+mapping:
+  loop-order:
+    AS:
+    - P
+    - N
+    - M
+    AT:
+    - Q
+    - P
+    - N
+    - M
+    BS:
+    - Q
+    - P
+    - M
+    - N
+    ZS_init:
+    - Q
+    - M
+    - N
+    ZS:
+    - Q
+    - P
+    - M
+    - N
+    ZH:
+    - Q
+    - M
+    - N
+  spacetime:
+    AS:
+      space:
+      - N
+      time:
+      - P
+      - M
+    AT:
+      space:
+      - N
+      - M
+      time:
+      - Q
+      - P
+    BS:
+      space:
+      - M
+      time:
+      - Q
+      - P
+      - N
+    ZS_init:
+      space:
+      - M
+      time:
+      - Q
+      - N
+    ZS:
+      space:
+      - M
+      time:
+      - Q
+      - P
+      - N
+    ZH:
+      space:
+      - M
+      time:
+      - Q
+      - N
+  fusion:
+  - einsums:
+    - AS
+    - AT
+    - BS
+    - ZS_init
+    - ZS
+    - ZH
+    ranks:
+    - - AT.Q
+      - BS.Q
+      - ZS_init.Q
+      - ZS.Q
+      - ZH.Q
+format:
+  AS:
+    rank-order:
+      AS:
+      - P
+      - N
+      - M
+      AT:
+      - P
+      - N
+      - M
+    bit-width: 32
+    data-type: float
+  AH:
+    rank-order:
+      AS:
+      - P
+      - N
+      - M
+    bit-width: 32
+    data-type: float
+  AT:
+    rank-order:
+      AT:
+      - Q
+      - P
+      - M
+      - N
+      BS:
+      - Q
+      - P
+      - M
+      - N
+    bit-width: 32
+    data-type: float
+  BS:
+    rank-order:
+      BS:
+      - Q
+      - P
+      - M
+      - N
+      ZS:
+      - Q
+      - P
+      - M
+      - N
+    bit-width: 32
+    data-type: float
+  ZS:
+    rank-order:
+      ZS_init:
+      - Q
+      - PI
+      - M
+      - N
+      ZS:
+      - Q
+      - PI
+      - M
+      - N
+      ZH:
+      - Q
+      - PI
+      - M
+      - N
+    bit-width: 32
+    data-type: float
+  ZH:
+    rank-order:
+      ZH:
+      - Q
+      - M
+      - N
+    bit-width: 32
+    data-type: float
+binding:
+  engine:
+  - einsum: AS
+    ranks:
+    - N
+    - M
+    component: DMAEngine
+    instruction: Load
+  - einsum: AT
+    ranks:
+    - N
+    - M
+    component: TensorEngine
+    instruction: Transpose32
+  - einsum: BS
+    ranks:
+    - M
+    - N
+    component: ScalarEngine
+    instruction: Unary
+  - einsum: ZS_init
+    ranks:
+    - M
+    - N
+    component: VectorEngine
+    instruction: MemSet
+  - einsum: ZS
+    ranks:
+    - M
+    - N
+    component: VectorEngine
+    instruction: TensorTensorSP
+  - einsum: ZH
+    ranks:
+    - M
+    - N
+    component: DMAEngine
+    instruction: Store
+  tensor:
+  - name: AS
+    einsum: AS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound: []
+      partition:
+      - N
+      free:
+      - P
+      - M
+  - name: AS
+    einsum: AT
+    component:
+      name: SBUF
+    ranks:
+      unbound: []
+      partition:
+      - N
+      free:
+      - P
+      - M
+  - name: AH
+    einsum: AS
+    component:
+      name: HBM
+    ranks:
+      unbound: []
+      bound:
+      - P
+      - N
+      - M
+  - name: AT
+    einsum: AT
+    component:
+      name: PSUM
+    constructor: empty
+    ranks:
+      unbound:
+      - Q
+      partition:
+      - M
+      free:
+      - P
+      - N
+  - name: AT
+    einsum: BS
+    component:
+      name: PSUM
+    ranks:
+      unbound:
+      - Q
+      partition:
+      - M
+      free:
+      - P
+      - N
+  - name: BS
+    einsum: BS
+    component:
+      name: PSUM
+    constructor: empty
+    ranks:
+      unbound:
+      - Q
+      partition:
+      - M
+      free:
+      - P
+      - N
+  - name: BS
+    einsum: ZS
+    component:
+      name: PSUM
+    ranks:
+      unbound:
+      - Q
+      partition:
+      - M
+      free:
+      - P
+      - N
+  - name: ZS
+    einsum: ZS_init
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound:
+      - Q
+      - PI
+      partition:
+      - M
+      free:
+      - N
+  - name: ZS
+    einsum: ZS
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - Q
+      - PI
+      partition:
+      - M
+      free:
+      - N
+  - name: ZS
+    einsum: ZH
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - Q
+      - PI
+      partition:
+      - M
+      free:
+      - N
+  - name: ZH
+    einsum: ZH
+    component:
+      name: HBM
+    constructor: empty
+    ranks:
+      unbound: []
+      bound:
+      - Q
+      - M
+      - N

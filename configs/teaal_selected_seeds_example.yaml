@@ -1,0 +1,62 @@
+experiment_set:
+  name: teaal_chia_challenge_example_{model_slug}
+  base_experiment_config: experiment.yaml
+  output_root: ../runs/teaal_chia_challenge_example_{model_slug}
+  iterations: 30
+  seeds:
+  - 0
+  engines:
+  - alphaevolve_structured
+  models:
+    structured_random:
+    - null
+    structured_walk:
+    - null
+  model_sweep: gemini-3.5-flash
+kernels:
+  attention:
+    kernel_file: ../teaal_evolve/example/kernel/nki/selected_seeds/attention.yaml
+cost_tracking:
+  default:
+    currency: USD
+    input_per_million_tokens_usd: null
+    output_per_million_tokens_usd: null
+    compute_hourly_usd: 0.39534
+    manual_llm_cost_usd: null
+    manual_compute_cost_usd: null
+    manual_storage_cost_usd: null
+    manual_other_cost_usd: null
+    manual_cloud_credit_used_usd: null
+    billing_source: Google Cloud billing
+    pricing_as_of: '2026-09-22'
+    note: Use provider-reported costs when available. Always save token usage.
+  by_engine:
+    alphaevolve_structured:
+      input_per_million_tokens_usd: null
+      output_per_million_tokens_usd: null
+      note: Token usage is saved. Use Cloud Billing to confirm the final AlphaEvolve cost.
+    alphaevolve_guided:
+      input_per_million_tokens_usd: null
+      output_per_million_tokens_usd: null
+      note: Token usage is saved. Use Cloud Billing to confirm the final AlphaEvolve cost.
+  by_model:
+    google/gemini-2.5-flash:
+      input_per_million_tokens_usd: 0.3
+      output_per_million_tokens_usd: 2.5
+    google-vertex/gemini-2.5-flash:
+      input_per_million_tokens_usd: 0.3
+      output_per_million_tokens_usd: 2.5
+    google/gemini-3.5-flash:
+      input_per_million_tokens_usd: 1.5
+      output_per_million_tokens_usd: 9.0
+    google-vertex/gemini-3.5-flash:
+      input_per_million_tokens_usd: 1.5
+      output_per_million_tokens_usd: 9.0
+    gemini-3.5-flash:
+      input_per_million_tokens_usd: 4.5
+      output_per_million_tokens_usd: 27.0
+      note: Includes Gemini and AlphaEvolve agent token pricing.
+    gemini-2.5-flash:
+      input_per_million_tokens_usd: null
+      output_per_million_tokens_usd: null
+      note: Token pricing is not configured. Use Cloud Billing to confirm the final AlphaEvolve cost.

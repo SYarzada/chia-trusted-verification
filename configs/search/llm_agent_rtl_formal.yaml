@@ -1,0 +1,17 @@
+agent:
+  provider: vertex_gemini
+  model: google-vertex/gemini-3.5-flash
+  project_env: GOOGLE_CLOUD_PROJECT
+  location: global
+  timeout_seconds: 600
+  retries: 3
+  max_tokens: 32768
+  max_tool_iterations: 9
+  require_first_tool_call: true
+  thinking_level: medium
+  first_tool_thinking_level: low
+  first_tool_retry_thinking_level: minimal
+  max_forced_tool_retries: 1
+tool:
+  resources:
+    trusted_verification_tool: 1

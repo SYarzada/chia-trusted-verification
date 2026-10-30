@@ -1,0 +1,707 @@
+einsum:
+  declaration:
+    A:
+    - K1
+    - K0
+    - M1
+    - M0
+    AH:
+    - K1
+    - K0
+    - M1
+    - M0
+    AS:
+    - K1
+    - K0
+    - M1
+    - M0
+    - N1
+    B:
+    - K1
+    - K0
+    - N1
+    - N0
+    BH:
+    - K1
+    - K0
+    - N1
+    - N0
+    BS:
+    - K1
+    - K0
+    - M1
+    - N1
+    - N0
+    ZP:
+    - K1
+    - M1
+    - M0
+    - N1
+    - N0
+    ZS:
+    - K1I
+    - M1
+    - M0
+    - N1
+    - N0
+    ZH:
+    - M1
+    - M0
+    - N1
+    - N0
+    Z:
+    - M1
+    - M0
+    - N1
+    - N0
+  expressions:
+  - AH[k1, k0, m1, m0] = A[k1, k0, m1, m0]
+  - BH[k1, k0, n1, n0] = B[k1, k0, n1, n0]
+  - ZS_init: ZS[0, m1, m0, n1, n0] = 0
+  - BS[k1, k0, m1, n1, n0] = BH[k1, k0, n1, n0]
+  - AS[k1, k0, m1, m0, n1] = AH[k1, k0, m1, m0]
+  - ZP[k1, m1, m0, n1, n0] = AS[k1, k0, m1, m0, n1] . BS[k1, k0, m1, n1, n0] ;; M
+    binary[multiply] V binary[add]
+  - ZS[k1 + 1, m1, m0, n1, n0] = ZS[k1, m1, m0, n1, n0] . ZP[k1, m1, m0, n1, n0] ;;
+    M binary[add]
+  - ZH[m1, m0, n1, n0] = ZS[K1, m1, m0, n1, n0]
+  - Z[m1, m0, n1, n0] = ZH[m1, m0, n1, n0]
+  shape:
+    K0: 1024
+    M0: 512
+    N0: 2048
+mapping:
+  partitioning:
+    AH:
+      (K1, K0):
+      - flatten()
+      (M1, M0):
+      - flatten()
+    BH:
+      (K1, K0):
+      - flatten()
+      (N1, N0):
+      - flatten()
+    ZS_init:
+      M0:
+      - uniform_shape(128)
+    AS:
+      K0:
+      - uniform_shape(128)
+    BS:
+      K0:
+      - uniform_shape(128)
+    ZP:
+      K0:
+      - uniform_shape(128)
+      M0:
+      - uniform_shape(128)
+      N0:
+      - uniform_shape(512)
+    ZS:
+      M0:
+      - uniform_shape(128)
+      N0:
+      - uniform_shape(512)
+    ZH:
+      M0:
+      - uniform_shape(128)
+    Z:
+      (M1, M0):
+      - flatten()
+      (N1, N0):
+      - flatten()
+  loop-order:
+    AH:
+    - K1K0
+    - M1M0
+    BH:
+    - K1K0
+    - N1N0
+    ZS_init:
+    - M1
+    - N1
+    - M01
+    - M00
+    - N0
+    AS:
+    - M1
+    - N1
+    - K1
+    - K01
+    - K00
+    - M0
+    BS:
+    - M1
+    - N1
+    - K1
+    - K01
+    - K00
+    - N0
+    ZP:
+    - M1
+    - N1
+    - K1
+    - M01
+    - N01
+    - K01
+    - K00
+    - M00
+    - N00
+    ZS:
+    - M1
+    - N1
+    - K1
+    - M01
+    - N01
+    - M00
+    - N00
+    ZH:
+    - M1
+    - N1
+    - M01
+    - M00
+    - N0
+    Z:
+    - M1M0
+    - N1N0
+  spacetime:
+    AH:
+      space: []
+      time:
+      - K1K0
+      - M1M0
+    BH:
+      space: []
+      time:
+      - K1K0
+      - N1N0
+    ZS_init:
+      space:
+      - M00
+      time:
+      - M1
+      - N1
+      - M01
+      - N0
+    AS:
+      space:
+      - K00
+      time:
+      - M1
+      - N1
+      - K1
+      - K01
+      - M0
+    BS:
+      space:
+      - K00
+      time:
+      - M1
+      - N1
+      - K1
+      - K01
+      - N0
+    ZP:
+      space:
+      - K00
+      - M00
+      time:
+      - M1
+      - N1
+      - K1
+      - M01
+      - N01
+      - K01
+      - N00
+    ZS:
+      space:
+      - M00
+      time:
+      - M1
+      - N1
+      - K1
+      - M01
+      - N01
+      - N00
+    ZH:
+      space:
+      - M00
+      time:
+      - M1
+      - N1
+      - M01
+      - N0
+    Z:
+      space: []
+      time:
+      - M1M0
+      - N1N0
+  fusion:
+  - einsums:
+    - AH
+    - BH
+    - ZS_init
+    - AS
+    - BS
+    - ZP
+    - ZS
+    - ZH
+    - Z
+    ranks:
+    - - ZS_init.M1
+      - AS.M1
+      - BS.M1
+      - ZP.M1
+      - ZS.M1
+      - ZH.M1
+    - - ZS_init.N1
+      - AS.N1
+      - BS.N1
+      - ZP.N1
+      - ZS.N1
+      - ZH.N1
+    - - AS.K1
+      - BS.K1
+      - ZP.K1
+      - ZS.K1
+    - - ZP.M01
+      - ZS.M01
+    - - ZP.N01
+      - ZS.N01
+format:
+  A:
+    rank-order:
+      AH:
+      - K1K0
+      - M1M0
+    bit-width: 16
+    data-type: float
+  AH:
+    rank-order:
+      AH:
+      - K1K0
+      - M1M0
+      AS:
+      - K1
+      - K01
+      - K00
+      - M1
+      - M0
+    bit-width: 16
+    data-type: float
+  AS:
+    rank-order:
+      AS:
+      - M1
+      - N1
+      - K1
+      - K01
+      - K00
+      - M0
+      ZP:
+      - M1
+      - N1
+      - K1
+      - K01
+      - K00
+      - M01
+      - M00
+    bit-width: 16
+    data-type: float
+  B:
+    rank-order:
+      BH:
+      - K1K0
+      - N1N0
+    bit-width: 16
+    data-type: float
+  BH:
+    rank-order:
+      BH:
+      - K1K0
+      - N1N0
+      BS:
+      - K1
+      - K01
+      - K00
+      - N1
+      - N0
+    bit-width: 16
+    data-type: float
+  BS:
+    rank-order:
+      BS:
+      - M1
+      - N1
+      - K1
+      - K00
+      - K01
+      - N0
+      ZP:
+      - M1
+      - N1
+      - K1
+      - K00
+      - K01
+      - N01
+      - N00
+    bit-width: 16
+    data-type: float
+  ZP:
+    rank-order:
+      ZP:
+      - M1
+      - N1
+      - K1
+      - M01
+      - N01
+      - M00
+      - N00
+      ZS:
+      - M1
+      - N1
+      - K1
+      - M01
+      - N01
+      - M00
+      - N00
+    bit-width: 32
+    data-type: float
+  ZS:
+    rank-order:
+      ZS_init:
+      - M1
+      - N1
+      - K1I
+      - M00
+      - M01
+      - N0
+      ZS:
+      - M1
+      - N1
+      - K1I
+      - M00
+      - M01
+      - N01
+      - N00
+      ZH:
+      - M1
+      - N1
+      - K1I
+      - M00
+      - M01
+      - N0
+    bit-width: 16
+    data-type: float
+  ZH:
+    rank-order:
+      ZH:
+      - M1
+      - M01
+      - M00
+      - N1
+      - N0
+      Z:
+      - M1M0
+      - N1N0
+    bit-width: 16
+    data-type: float
+  Z:
+    rank-order:
+      Z:
+      - M1M0
+      - N1N0
+    bit-width: 16
+    data-type: float
+binding:
+  engine:
+  - einsum: AH
+    component: None
+    instruction: RenameHBM2D
+    ranks:
+    - K1K0
+    - M1M0
+  - einsum: BH
+    component: None
+    instruction: RenameHBM2D
+    ranks:
+    - K1K0
+    - N1N0
+  - einsum: ZS_init
+    component: VectorEngine
+    instruction: MemSet
+    ranks:
+    - M00
+    - N0
+  - einsum: AS
+    component: DMAEngine
+    instruction: Load
+    ranks:
+    - K00
+    - M0
+  - einsum: BS
+    component: DMAEngine
+    instruction: Load
+    ranks:
+    - K00
+    - N0
+  - einsum: ZP
+    component: TensorEngine
+    instruction: MatMul16
+    ranks:
+    - K00
+    - M00
+    - N00
+  - einsum: ZS
+    component: VectorEngine
+    instruction: TensorTensorSP
+    ranks:
+    - M00
+    - N00
+  - einsum: ZH
+    component: DMAEngine
+    instruction: Store
+    ranks:
+    - M00
+    - N0
+  - einsum: Z
+    component: None
+    instruction: RenameHBM2D
+    ranks:
+    - M1M0
+    - N1N0
+  tensor:
+  - name: A
+    einsum: AH
+    component:
+      name: HBM
+    ranks:
+      unbound: []
+      bound:
+      - K1K0
+      - M1M0
+  - name: AH
+    einsum: AH
+    component:
+      name: HBM
+    constructor: none
+    ranks:
+      unbound: []
+      bound:
+      - K1K0
+      - M1M0
+  - name: AH
+    einsum: AS
+    component:
+      name: HBM
+    ranks:
+      unbound: []
+      bound:
+      - K1
+      - K01
+      - K00
+      - M1
+      - M0
+  - name: AS
+    einsum: AS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound:
+      - M1
+      - N1
+      - K1
+      partition:
+      - K00
+      free:
+      - K01
+      - M0
+  - name: AS
+    einsum: ZP
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - M1
+      - N1
+      - K1
+      partition:
+      - K00
+      free:
+      - K01
+      - M01
+      - M00
+  - name: B
+    einsum: BH
+    component:
+      name: HBM
+    ranks:
+      unbound: []
+      bound:
+      - K1K0
+      - N1N0
+  - name: BH
+    einsum: BH
+    component:
+      name: HBM
+    constructor: none
+    ranks:
+      unbound: []
+      bound:
+      - K1K0
+      - N1N0
+  - name: BH
+    einsum: BS
+    component:
+      name: HBM
+    ranks:
+      unbound: []
+      bound:
+      - K1
+      - K01
+      - K00
+      - N1
+      - N0
+  - name: BS
+    einsum: BS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound:
+      - M1
+      - N1
+      - K1
+      partition:
+      - K00
+      free:
+      - K01
+      - N0
+  - name: BS
+    einsum: ZP
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - M1
+      - N1
+      - K1
+      partition:
+      - K00
+      free:
+      - K01
+      - N01
+      - N00
+  - name: ZP
+    einsum: ZP
+    component:
+      name: PSUM
+    constructor: zeros
+    ranks:
+      unbound:
+      - M1
+      - N1
+      - K1
+      - M01
+      partition:
+      - M00
+      free:
+      - N01
+      - N00
+  - name: ZP
+    einsum: ZS
+    component:
+      name: PSUM
+    ranks:
+      unbound:
+      - M1
+      - N1
+      - K1
+      - M01
+      partition:
+      - M00
+      free:
+      - N01
+      - N00
+  - name: ZS
+    einsum: ZS_init
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound:
+      - M1
+      - N1
+      - K1I
+      partition:
+      - M00
+      free:
+      - M01
+      - N0
+  - name: ZS
+    einsum: ZS
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - M1
+      - N1
+      - K1I
+      partition:
+      - M00
+      free:
+      - M01
+      - N01
+      - N00
+  - name: ZS
+    einsum: ZH
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - M1
+      - N1
+      - K1I
+      partition:
+      - M00
+      free:
+      - M01
+      - N0
+  - name: ZH
+    einsum: ZH
+    component:
+      name: HBM
+    constructor: empty
+    ranks:
+      unbound: []
+      bound:
+      - M1
+      - M01
+      - M00
+      - N1
+      - N0
+  - name: ZH
+    einsum: Z
+    component:
+      name: HBM
+    ranks:
+      unbound: []
+      bound:
+      - M1M0
+      - N1N0
+  - name: Z
+    einsum: Z
+    component:
+      name: HBM
+    constructor: none
+    ranks:
+      unbound: []
+      bound:
+      - M1M0
+      - N1N0
+options:
+  kernel-name: matmul
+  cascade-outputs:
+  - Z

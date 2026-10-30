@@ -1,0 +1,1546 @@
+einsum:
+  declaration:
+    QH:
+    - E
+    - P3
+    - P2
+    - P1
+    - P0
+    QS:
+    - E
+    - P3
+    - P2U
+    - P1
+    - P0
+    KH:
+    - E
+    - M2
+    - M1
+    - M0
+    KS:
+    - E
+    - M2
+    - M1
+    - M0
+    VH:
+    - F
+    - M2
+    - M1
+    - M0
+    VS:
+    - F
+    - M2
+    - M1
+    - M0
+    VTP:
+    - M0
+    - M2
+    - M1
+    - F
+    VTS:
+    - M0
+    - M2
+    - M1
+    - F
+    QKP:
+    - P3
+    - P2
+    - P1
+    - P0
+    - M2
+    - M1
+    - M0
+    QKS:
+    - P3
+    - P2U
+    - P1
+    - P0
+    - M2
+    - M1
+    - M0
+    GMPR:
+    - P3
+    - P2U
+    - P1
+    - P0
+    - M2
+    GMT:
+    - P3
+    - P2U
+    - P1
+    - P0
+    GM:
+    - P3
+    - P2U
+    - P1
+    - P0
+    QKSGM:
+    - P3
+    - P2
+    - P1
+    - P0
+    - M2
+    - M1
+    - M0
+    SN:
+    - P3
+    - P2U
+    - P1
+    - P0
+    - M2
+    - M1
+    - M0
+    SNTP:
+    - P3
+    - P2
+    - M0
+    - M2
+    - M1
+    - P1
+    - P0
+    SNTS:
+    - P3
+    - P2U
+    - M0
+    - M2
+    - M1
+    - P1
+    - P0
+    SD:
+    - P3
+    - P2U
+    - P1
+    - P0
+    SDR:
+    - P3
+    - P2U
+    - P1
+    - P0
+    SNVP:
+    - P3
+    - P2
+    - P1
+    - P0
+    - F
+    AV:
+    - P3
+    - P2U
+    - P1
+    - P0
+    - F
+    AVZ:
+    - P3
+    - P2
+    - P1
+    - P0
+    - F
+  expressions:
+  - KS[e, m2, m1, m0] = KH[e, m2, m1, m0]
+  - VS[f, m2, m1, m0] = VH[f, m2, m1, m0]
+  - VTP[m0, m2, m1, f] = VS[f, m2, m1, m0]
+  - VTS[m0, m2, m1, f] = VTP[m0, m2, m1, f]
+  - QS[e, p3, p2 + 0, p1, p0] = QH[e, p3, p2, p1, p0]
+  - QKP[p3, p2, p1, p0, m2, m1, m0] = QS[e, p3, p2 + 0, p1, p0] . KS[e, m2, m1, m0]
+    ;; M binary[multiply] V binary[add]
+  - QKS[p3, p2 + 0, p1, p0, m2, m1, m0] = QKP[p3, p2, p1, p0, m2, m1, m0] . 0 ;; M
+    binary[add]
+  - GMPR[p3, p2 + 0, p1, p0, m2] = QKS[p3, p2 + 0, p1, p0, m2, m1, m0] ;; V binary[maximum]
+  - GMT[p3, p2 + 0, p1, p0] = GMPR[p3, p2 + 0, p1, p0, m2] ;; V binary[maximum]
+  - GM[p3, p2 + 0, p1, p0] = -1 . GMT[p3, p2 + 0, p1, p0] ;; M binary[multiply]
+  - QKSGM[p3, p2, p1, p0, m2, m1, m0] = QKS[p3, p2 + 0, p1, p0, m2, m1, m0] . GM[p3,
+    p2 + 0, p1, p0] ;; M binary[add]
+  - SN[p3, p2 + 0, p1, p0, m2, m1, m0] = QKSGM[p3, p2, p1, p0, m2, m1, m0] ;; M unary[exp]
+  - SD[p3, p2 + 0, p1, p0] = SN[p3, p2 + 0, p1, p0, m2, m1, m0] ;; V binary[add]
+  - SNTP[p3, p2, m0, m2, m1, p1, p0] = SN[p3, p2 + 0, p1, p0, m2, m1, m0]
+  - SNTS[p3, p2 + 0, m0, m2, m1, p1, p0] = SNTP[p3, p2, m0, m2, m1, p1, p0]
+  - SDR[p3, p2 + 0, p1, p0] =  1 . SD[p3, p2 + 0, p1, p0] ;; M binary[divide]
+  - SNVP[p3, p2, p1, p0, f] = SNTS[p3, p2 + 0, m0, m2, m1, p1, p0] . VTS[m0, m2, m1,
+    f] ;; M binary[multiply] V binary[add]
+  - AV[p3, p2 + 0, p1, p0, f] = SNVP[p3, p2, p1, p0, f] . SDR[p3, p2 + 0, p1, p0]
+    ;; M binary[multiply]
+  - AVZ[p3, p2, p1, p0, f] = AV[p3, p2 + 0, p1, p0, f]
+  shape:
+    M1: 4
+    M0: 128
+    P2: 2
+    P2U: 2
+    P1: 128
+    P0: 1
+    E: 128
+    F: 128
+mapping:
+  partitioning:
+    QS:
+      (P3, P2):
+      - flatten()
+      (P1, P0):
+      - flatten()
+    KS:
+      (M2, M1, M0):
+      - flatten()
+    VS:
+      (M2, M1, M0):
+      - flatten()
+    QKP:
+      (P3, P2):
+      - flatten()
+      (M1, M0):
+      - flatten()
+    QKS:
+      (P3, P2):
+      - flatten()
+      (M1, M0):
+      - flatten()
+    GMPR:
+      (P3, P2):
+      - flatten()
+      (M1, M0):
+      - flatten()
+    GMT:
+      (P3, P2):
+      - flatten()
+    GM:
+      (P3, P2):
+      - flatten()
+    QKSGM:
+      (P3, P2):
+      - flatten()
+      (M2, M1, M0):
+      - flatten()
+    SN:
+      (P3, P2):
+      - flatten()
+      (M2, M1, M0):
+      - flatten()
+    SNTP:
+      (P3, P2):
+      - flatten()
+    SNTS:
+      (P3, P2):
+      - flatten()
+    SD:
+      (P3, P2):
+      - flatten()
+      (M2, M1, M0):
+      - flatten()
+    SDR:
+      (P3, P2):
+      - flatten()
+    SNVP:
+      (P3, P2):
+      - flatten()
+    AV:
+      (P3, P2):
+      - flatten()
+    AVZ:
+      (P3, P2):
+      - flatten()
+  loop-order:
+    QS:
+    - P3P2
+    - E
+    - P1P0
+    KS:
+    - E
+    - M2M1M0
+    VS:
+    - F
+    - M2M1M0
+    QKP:
+    - P3P2
+    - M2
+    - P0
+    - E
+    - P1
+    - M1M0
+    QKS:
+    - P3P2
+    - M2
+    - P0
+    - P1
+    - M1M0
+    GMPR:
+    - P3P2
+    - M2
+    - P0
+    - P1
+    - M1M0
+    GMT:
+    - P3P2
+    - P0
+    - P1
+    - M2
+    GM:
+    - P3P2
+    - P0
+    - P1
+    QKSGM:
+    - P3P2
+    - P0
+    - P1
+    - M2M1M0
+    SN:
+    - P3P2
+    - P0
+    - P1
+    - M2M1M0
+    SNTP:
+    - P3P2
+    - M2
+    - M1
+    - P0
+    - M0
+    - P1
+    SNTS:
+    - P3P2
+    - M2
+    - M1
+    - P0
+    - M0
+    - P1
+    SD:
+    - P3P2
+    - P0
+    - P1
+    - M2M1M0
+    SDR:
+    - P3P2
+    - P1
+    - P0
+    VTP:
+    - M2
+    - M1
+    - M0
+    - F
+    VTS:
+    - M2
+    - M1
+    - M0
+    - F
+    SNVP:
+    - P3P2
+    - P0
+    - M2
+    - M1
+    - M0
+    - P1
+    - F
+    AV:
+    - P3P2
+    - P0
+    - P1
+    - F
+    AVZ:
+    - P3P2
+    - P0
+    - P1
+    - F
+  spacetime:
+    QS:
+      space:
+      - E
+      time:
+      - P3P2
+      - P1P0
+    KS:
+      space:
+      - E
+      time:
+      - M2M1M0
+    VS:
+      space:
+      - F
+      time:
+      - M2M1M0
+    QKP:
+      space:
+      - E
+      - P1
+      - M1M0
+      time:
+      - P3P2
+      - M2
+      - P0
+    QKS:
+      space:
+      - P1
+      time:
+      - P3P2
+      - M2
+      - P0
+      - M1M0
+    GMPR:
+      space:
+      - P1
+      time:
+      - P3P2
+      - M2
+      - P0
+      - M1M0
+    GMT:
+      space:
+      - P1
+      time:
+      - P3P2
+      - P0
+      - M2
+    GM:
+      space:
+      - P1
+      time:
+      - P3P2
+      - P0
+    QKSGM:
+      space:
+      - P1
+      time:
+      - P3P2
+      - P0
+      - M2M1M0
+    SN:
+      space:
+      - P1
+      time:
+      - P3P2
+      - P0
+      - M2M1M0
+    SNTP:
+      space:
+      - M0
+      - P1
+      time:
+      - P3P2
+      - M2
+      - M1
+      - P0
+    SNTS:
+      space:
+      - M0
+      time:
+      - P3P2
+      - M2
+      - M1
+      - P0
+      - P1
+    SD:
+      space:
+      - P1
+      time:
+      - P3P2
+      - P0
+      - M2M1M0
+    SDR:
+      space:
+      - P1
+      time:
+      - P3P2
+      - P0
+    VTP:
+      space:
+      - M0
+      - F
+      time:
+      - M2
+      - M1
+    VTS:
+      space:
+      - M0
+      time:
+      - M2
+      - M1
+      - F
+    SNVP:
+      space:
+      - M0
+      - P1
+      - F
+      time:
+      - P3P2
+      - P0
+      - M2
+      - M1
+    AV:
+      space:
+      - P1
+      time:
+      - P3P2
+      - P0
+      - F
+    AVZ:
+      space:
+      - P1
+      time:
+      - P3P2
+      - P0
+      - F
+  fusion:
+  - einsums:
+    - KS
+    - VS
+    - VTP
+    - VTS
+    ranks:
+    - - VTP.M2
+      - VTS.M2
+    - - VTP.M1
+      - VTS.M1
+  - einsums:
+    - QS
+    - QKP
+    - QKS
+    - GMPR
+    - GMT
+    - GM
+    - QKSGM
+    - SN
+    - SNTP
+    - SNTS
+    - SD
+    - SDR
+    - SNVP
+    - AV
+    - AVZ
+    ranks:
+    - P3P2:
+      - QS.P3P2
+      - QKP.P3P2
+      - QKS.P3P2
+      - GMPR.P3P2
+      - GMT.P3P2
+      - GM.P3P2
+      - QKSGM.P3P2
+      - SN.P3P2
+      - SNTP.P3P2
+      - SNTS.P3P2
+      - SD.P3P2
+      - SDR.P3P2
+      - SNVP.P3P2
+      - AV.P3P2
+      - AVZ.P3P2
+    - QK_M2:
+      - QKP.M2
+      - QKS.M2
+      - GMPR.M2
+    - GM_P0:
+      - GMT.P0
+      - GM.P0
+    - SN_P0:
+      - QKSGM.P0
+      - SN.P0
+      - SD.P0
+    - SNT_M2:
+      - SNTP.M2
+      - SNTS.M2
+    - AV_P0:
+      - SNVP.P0
+      - AV.P0
+    - - QKP.P0
+      - QKS.P0
+      - GMPR.P0
+    - - QKS.P1
+      - GMPR.P1
+    - - QKS.M1M0
+      - GMPR.M1M0
+    - - GMT.P1
+      - GM.P1
+    - - SNTP.P0
+      - SNTS.P0
+    - - QKSGM.P1
+      - SN.P1
+      - SD.P1
+    - - QKSGM.M2M1M0
+      - SN.M2M1M0
+      - SD.M2M1M0
+    - - SNTP.M1
+      - SNTS.M1
+format:
+  QH:
+    rank-order:
+      QS:
+      - E
+      - P3P2
+      - P1P0
+    bit-width: 16
+    data-type: bfloat
+  QS:
+    rank-order:
+      QS:
+      - P3
+      - P2U
+      - E
+      - P1P0
+      QKP:
+      - P3
+      - P2U
+      - E
+      - P1
+      - P0
+    bit-width: 16
+    data-type: bfloat
+  KH:
+    rank-order:
+      KS:
+      - E
+      - M2M1M0
+    bit-width: 16
+    data-type: bfloat
+  KS:
+    rank-order:
+      KS:
+      - E
+      - M2M1M0
+      QKP:
+      - E
+      - M2
+      - M1M0
+    bit-width: 16
+    data-type: bfloat
+  VH:
+    rank-order:
+      VS:
+      - F
+      - M2M1M0
+    bit-width: 16
+    data-type: bfloat
+  VS:
+    rank-order:
+      VS:
+      - F
+      - M2M1M0
+      VTP:
+      - F
+      - M2
+      - M1
+      - M0
+    bit-width: 16
+    data-type: bfloat
+  QKP:
+    rank-order:
+      QKP:
+      - P3P2
+      - M2
+      - P1
+      - P0
+      - M1M0
+      QKS:
+      - P3P2
+      - M2
+      - P1
+      - P0
+      - M1M0
+    bit-width: 32
+    data-type: float
+  QKS:
+    rank-order:
+      QKS:
+      - P3
+      - P2U
+      - P1
+      - P0
+      - M2
+      - M1M0
+      GMPR:
+      - P3
+      - P2U
+      - P1
+      - P0
+      - M2
+      - M1M0
+      QKSGM:
+      - P3
+      - P2U
+      - P1
+      - P0
+      - M2M1M0
+    bit-width: 32
+    data-type: float
+  GMPR:
+    rank-order:
+      GMPR:
+      - P3
+      - P2U
+      - P1
+      - P0
+      - M2
+      GMT:
+      - P3
+      - P2U
+      - P1
+      - P0
+      - M2
+    bit-width: 32
+    data-type: float
+  GMT:
+    rank-order:
+      GMT:
+      - P3
+      - P2U
+      - P0
+      - P1
+      GM:
+      - P3
+      - P2U
+      - P0
+      - P1
+    bit-width: 32
+    data-type: float
+  GM:
+    rank-order:
+      GM:
+      - P3
+      - P2U
+      - P1
+      - P0
+      QKSGM:
+      - P3
+      - P2U
+      - P1
+      - P0
+    bit-width: 32
+    data-type: float
+  QKSGM:
+    rank-order:
+      QKSGM:
+      - P3P2
+      - P0
+      - M2M1M0
+      - P1
+      SN:
+      - P3P2
+      - P0
+      - M2M1M0
+      - P1
+    bit-width: 32
+    data-type: float
+  SN:
+    rank-order:
+      SN:
+      - P3
+      - P2U
+      - P1
+      - P0
+      - M2M1M0
+      SNTP:
+      - P3
+      - P2U
+      - P1
+      - P0
+      - M2
+      - M1
+      - M0
+      SD:
+      - P3
+      - P2U
+      - P1
+      - P0
+      - M2M1M0
+    bit-width: 16
+    data-type: bfloat
+  SNTP:
+    rank-order:
+      SNTP:
+      - P3P2
+      - P0
+      - M2
+      - M1
+      - M0
+      - P1
+      SNTS:
+      - P3P2
+      - P0
+      - M2
+      - M1
+      - M0
+      - P1
+    bit-width: 32
+    data-type: float
+  SNTS:
+    rank-order:
+      SNTS:
+      - P3
+      - P2U
+      - M0
+      - M2
+      - M1
+      - P0
+      - P1
+      SNVP:
+      - P3
+      - P2U
+      - M0
+      - M2
+      - M1
+      - P0
+      - P1
+    bit-width: 16
+    data-type: bfloat
+  SD:
+    rank-order:
+      SD:
+      - P3
+      - P2U
+      - P1
+      - P0
+      SDR:
+      - P3
+      - P2U
+      - P1
+      - P0
+    bit-width: 32
+    data-type: float
+  SDR:
+    rank-order:
+      SDR:
+      - P3
+      - P2U
+      - P1
+      - P0
+      AV:
+      - P3
+      - P2U
+      - P1
+      - P0
+    bit-width: 32
+    data-type: float
+  VTP:
+    rank-order:
+      VTP:
+      - M2
+      - M1
+      - M0
+      - F
+      VTS:
+      - M2
+      - M1
+      - M0
+      - F
+    bit-width: 32
+    data-type: float
+  VTS:
+    rank-order:
+      VTS:
+      - M0
+      - M2
+      - M1
+      - F
+      SNVP:
+      - M0
+      - M2
+      - M1
+      - F
+    bit-width: 16
+    data-type: bfloat
+  SNVP:
+    rank-order:
+      SNVP:
+      - P3P2
+      - P0
+      - P1
+      - F
+      AV:
+      - P3P2
+      - P0
+      - P1
+      - F
+    bit-width: 32
+    data-type: float
+  AV:
+    rank-order:
+      AV:
+      - P3
+      - P2U
+      - P1
+      - P0
+      - F
+      AVZ:
+      - P3
+      - P2U
+      - P1
+      - P0
+      - F
+    bit-width: 32
+    data-type: float
+  AVZ:
+    rank-order:
+      AVZ:
+      - P3P2
+      - P1
+      - P0
+      - F
+    bit-width: 16
+    data-type: bfloat
+binding:
+  engine:
+  - einsum: QS
+    component: DMAEngine
+    instruction: Load
+    ranks:
+    - E
+    - P1P0
+  - einsum: KS
+    component: DMAEngine
+    instruction: Load
+    ranks:
+    - E
+    - M2M1M0
+  - einsum: VS
+    component: DMAEngine
+    instruction: Load
+    ranks:
+    - F
+    - M2M1M0
+  - einsum: QKP
+    component: TensorEngine
+    instruction: MatMul16
+    ranks:
+    - E
+    - P1
+    - M1M0
+  - einsums:
+    - QKS
+    - GMPR
+    component: VectorEngine
+    instruction: TensorConstReduce
+    ranks:
+      QKS:
+      - P1
+      - M1M0
+      GMPR:
+      - P1
+      - M1M0
+  - einsums:
+    - GMT
+    - GM
+    component: VectorEngine
+    instruction: TensorReduceNegate
+    ranks:
+      GMT:
+      - P1
+      - M2
+      GM:
+      - P1
+  - einsums:
+    - QKSGM
+    - SN
+    - SD
+    component: ScalarEngine
+    instruction: BiasedUnaryReduce
+    ranks:
+      QKSGM:
+      - P1
+      - M2M1M0
+      SN:
+      - P1
+      - M2M1M0
+      SD:
+      - P1
+      - M2M1M0
+  - einsum: SNTP
+    component: TensorEngine
+    instruction: Transpose16
+    ranks:
+    - M0
+    - P1
+  - einsum: SNTS
+    component: ScalarEngine
+    instruction: TensorCopy
+    ranks:
+    - M0
+    - P1
+  - einsum: SDR
+    component: VectorEngine
+    instruction: Reciprocal
+    ranks:
+    - P1
+    - P0
+  - einsum: VTP
+    component: TensorEngine
+    instruction: Transpose16
+    ranks:
+    - M0
+    - F
+  - einsum: VTS
+    component: ScalarEngine
+    instruction: TensorCopy
+    ranks:
+    - M0
+    - F
+  - einsum: SNVP
+    component: TensorEngine
+    instruction: MatMul16
+    ranks:
+    - M0
+    - P1
+    - F
+  - einsum: AV
+    component: VectorEngine
+    instruction: TensorScalar
+    ranks:
+    - P1
+    - F
+  - einsum: AVZ
+    component: DMAEngine
+    instruction: Store
+    ranks:
+    - P1
+    - F
+  tensor:
+  - name: QH
+    einsum: QS
+    component:
+      name: HBM
+    ranks:
+      unbound: []
+      bound:
+      - E
+      - P3P2
+      - P1P0
+  - name: QS
+    einsum: QS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - E
+      free:
+      - P2U
+      - P1P0
+  - name: QS
+    einsum: QKP
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - E
+      free:
+      - P2U
+      - P1
+      - P0
+  - name: KH
+    einsum: KS
+    component:
+      name: HBM
+    ranks:
+      unbound: []
+      bound:
+      - E
+      - M2M1M0
+  - name: KS
+    einsum: KS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound: []
+      partition:
+      - E
+      free:
+      - M2M1M0
+  - name: KS
+    einsum: QKP
+    component:
+      name: SBUF
+    ranks:
+      unbound: []
+      partition:
+      - E
+      free:
+      - M2
+      - M1M0
+  - name: VH
+    einsum: VS
+    component:
+      name: HBM
+    ranks:
+      unbound: []
+      bound:
+      - F
+      - M2M1M0
+  - name: VS
+    einsum: VS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound: []
+      partition:
+      - F
+      free:
+      - M2M1M0
+  - name: VS
+    einsum: VTP
+    component:
+      name: SBUF
+    ranks:
+      unbound: []
+      partition:
+      - F
+      free:
+      - M2
+      - M1
+      - M0
+  - name: QKP
+    einsum: QKP
+    component:
+      name: PSUM
+    constructor: empty
+    ranks:
+      unbound:
+      - P3P2
+      - M2
+      partition:
+      - P1
+      free:
+      - P0
+      - M1M0
+  - name: QKP
+    einsum: QKS
+    component:
+      name: PSUM
+    ranks:
+      unbound:
+      - P3P2
+      - M2
+      partition:
+      - P1
+      free:
+      - P0
+      - M1M0
+  - name: QKS
+    einsum: QKS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+      - M2
+      - M1M0
+  - name: QKS
+    einsum: GMPR
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+      - M2
+      - M1M0
+  - name: QKS
+    einsum: QKSGM
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+      - M2M1M0
+  - name: GMPR
+    einsum: GMPR
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+      - M2
+  - name: GMPR
+    einsum: GMT
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+      - M2
+  - name: GMT
+    einsum: GMT
+    component:
+      name: VectorEnginePipelineRegisters
+    constructor: default
+    ranks:
+      unbound:
+      - P3
+      - P2U
+      - P0
+      partition:
+      - P1
+      registers: []
+  - name: GMT
+    einsum: GM
+    component:
+      name: VectorEnginePipelineRegisters
+    ranks:
+      unbound:
+      - P3
+      - P2U
+      - P0
+      partition:
+      - P1
+      registers: []
+  - name: GM
+    einsum: GM
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+  - name: GM
+    einsum: QKSGM
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+  - name: QKSGM
+    einsum: QKSGM
+    component:
+      name: ScalarEnginePipelineRegisters
+    constructor: default
+    ranks:
+      unbound:
+      - P3P2
+      - P0
+      - M2M1M0
+      partition:
+      - P1
+      registers: []
+  - name: QKSGM
+    einsum: SN
+    component:
+      name: ScalarEnginePipelineRegisters
+    ranks:
+      unbound:
+      - P3P2
+      - P0
+      - M2M1M0
+      partition:
+      - P1
+      registers: []
+  - name: SN
+    einsum: SN
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+      - M2M1M0
+  - name: SN
+    einsum: SNTP
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+      - M2
+      - M1
+      - M0
+  - name: SN
+    einsum: SD
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+      - M2M1M0
+  - name: SNTP
+    einsum: SNTP
+    component:
+      name: PSUM
+    constructor: empty
+    ranks:
+      unbound:
+      - P3P2
+      - P0
+      - M2
+      partition:
+      - M0
+      free:
+      - M1
+      - P1
+  - name: SNTP
+    einsum: SNTS
+    component:
+      name: PSUM
+    ranks:
+      unbound:
+      - P3P2
+      - P0
+      - M2
+      partition:
+      - M0
+      free:
+      - M1
+      - P1
+  - name: SNTS
+    einsum: SNTS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - M0
+      free:
+      - P2U
+      - M2
+      - M1
+      - P0
+      - P1
+  - name: SNTS
+    einsum: SNVP
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - M0
+      free:
+      - P2U
+      - M2
+      - M1
+      - P0
+      - P1
+  - name: SD
+    einsum: SD
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+  - name: SD
+    einsum: SDR
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+  - name: SDR
+    einsum: SDR
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+  - name: SDR
+    einsum: AV
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+  - name: VTP
+    einsum: VTP
+    component:
+      name: PSUM
+    constructor: empty
+    ranks:
+      unbound:
+      - M2
+      partition:
+      - M0
+      free:
+      - M1
+      - F
+  - name: VTP
+    einsum: VTS
+    component:
+      name: PSUM
+    ranks:
+      unbound:
+      - M2
+      partition:
+      - M0
+      free:
+      - M1
+      - F
+  - name: VTS
+    einsum: VTS
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound: []
+      partition:
+      - M0
+      free:
+      - M2
+      - M1
+      - F
+  - name: VTS
+    einsum: SNVP
+    component:
+      name: SBUF
+    ranks:
+      unbound: []
+      partition:
+      - M0
+      free:
+      - M2
+      - M1
+      - F
+  - name: SNVP
+    einsum: SNVP
+    component:
+      name: PSUM
+    constructor: empty
+    ranks:
+      unbound:
+      - P3P2
+      - P0
+      partition:
+      - P1
+      free:
+      - F
+  - name: SNVP
+    einsum: AV
+    component:
+      name: PSUM
+    ranks:
+      unbound:
+      - P3P2
+      - P0
+      partition:
+      - P1
+      free:
+      - F
+  - name: AV
+    einsum: AV
+    component:
+      name: SBUF
+    constructor: empty
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+      - F
+  - name: AV
+    einsum: AVZ
+    component:
+      name: SBUF
+    ranks:
+      unbound:
+      - P3
+      partition:
+      - P1
+      free:
+      - P2U
+      - P0
+      - F
+  - name: AVZ
+    einsum: AVZ
+    component:
+      name: HBM
+    constructor: empty
+    ranks:
+      unbound: []
+      bound:
+      - P3P2
+      - P1
+      - P0
+      - F
+  pipelining:
+  - loop: P3P2
+    order:
+    - statement: SN_P0
+      offset: 2
+    - statement: SNT_M2
+      offset: 2
+    - statement: SDR.instruction
+      offset: 2
+    - statement: AV_P0
+      offset: 2
+    - statement: QS.instruction
+      offset: 0
+    - statement: AVZ.P0
+      offset: 2
+    - statement: QK_M2
+      offset: 0
+    - statement: GM_P0
+      offset: 0
+options:
+  kernel-name: attn
+  cascade-outputs:
+  - AVZ

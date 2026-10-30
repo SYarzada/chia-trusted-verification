@@ -1,0 +1,15 @@
+model,search_strategy,proposals,replayable,unavailable,coverage_pct
+Gemini 3.1 Pro,alphaevolve_guided,1200,1200,0,100.0
+Gemini 3.1 Pro,alphaevolve_structured,1200,1200,0,100.0
+Gemini 3.1 Pro,llm_agent_guided,1200,1171,29,97.58333333333333
+Gemini 3.1 Pro,llm_agent_structured,1200,1169,31,97.41666666666667
+Gemini 3.1 Pro,openevolve_guided,1200,1200,0,100.0
+Gemini 3.1 Pro,openevolve_structured,1200,1200,0,100.0
+Gemini 3.5 Flash,alphaevolve_guided,1200,1200,0,100.0
+Gemini 3.5 Flash,alphaevolve_structured,1200,1200,0,100.0
+Gemini 3.5 Flash,llm_agent_guided,1200,1189,11,99.08333333333333
+Gemini 3.5 Flash,llm_agent_structured,1200,1164,36,97.0
+Gemini 3.5 Flash,openevolve_guided,1189,1189,0,100.0
+Gemini 3.5 Flash,openevolve_structured,1190,1190,0,100.0
+Gemini 3.5 Flash,structured_random,1200,1162,38,96.83333333333333
+Gemini 3.5 Flash,structured_walk,1200,1195,5,99.58333333333333

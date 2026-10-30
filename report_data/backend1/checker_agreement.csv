@@ -1,0 +1,4 @@
+backend,candidates,agreements,false_accepts,false_rejects,objective_mismatches,agreement_pct
+hierarchical,16629,16629,0,0,0,100.0
+hierarchical_delta_egraph,16629,16629,0,0,0,100.0
+hierarchical_delta_syntactic,16629,16629,0,0,0,100.0

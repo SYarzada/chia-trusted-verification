@@ -1,0 +1,92 @@
+cluster_name: chia-trusted-verification
+
+provider:
+  head_ip: "${CHIA_HEAD_IP}"
+
+auth:
+  ssh_user: "${USER}"
+
+# Make Google Cloud credentials available to the container.
+initialization_commands:
+  - >-
+    test -r "${HOME}/.config/gcloud/application_default_credentials.json" &&
+    test -n "${CHIA_PROJECT_ROOT}" &&
+    mkdir -p "${CHIA_PROJECT_ROOT}/runs" &&
+    chmod 0777 "${CHIA_PROJECT_ROOT}/runs" &&
+    docker volume create "chia-ctv-gcloud-${USER}" >/dev/null &&
+    docker run --rm --user root
+    -v "${HOME}/.config/gcloud/application_default_credentials.json:/src/application_default_credentials.json:ro"
+    -v "chia-ctv-gcloud-${USER}:/dest"
+    --entrypoint bash ghcr.io/ucb-bar/chia-opencode:latest
+    -lc 'RAY_UID="$(id -u ray)" && RAY_GID="$(id -g ray)" && install -o "$RAY_UID" -g "$RAY_GID" -m 0600 /src/application_default_credentials.json /dest/application_default_credentials.json'
+
+available_node_types:
+  trusted_project:
+    resources:
+      teaal_evolve: 1
+      trusted_verification_tool: 1
+      vertex_creds: 1
+    num_workers: 1
+    compatible_ips: ["${CHIA_HEAD_IP}"]
+    worker_setup_commands:
+      - "rm -rf /tmp/chia-trusted-verification-install && mkdir -p /tmp/chia-trusted-verification-install"
+      - "cp -a /opt/chia-trusted-verification/pyproject.toml /opt/chia-trusted-verification/README.md /opt/chia-trusted-verification/src /tmp/chia-trusted-verification-install/"
+      - "python -m pip install --no-cache-dir /tmp/chia-trusted-verification-install"
+      - "python -m pip install --no-cache-dir google-genai google-auth"
+    docker:
+      image: ghcr.io/ucb-bar/chia-opencode:latest
+      container_name: "chia-trusted-project-${USER}"
+      run_options:
+        - "-v ${CHIA_PROJECT_ROOT}:/opt/chia-trusted-verification:ro"
+        # Use the same project path inside and outside Docker.
+        - "-v ${CHIA_PROJECT_ROOT}:${CHIA_PROJECT_ROOT}:ro"
+        # Allow writes only to runs/.
+        - "-v ${CHIA_PROJECT_ROOT}/runs:${CHIA_PROJECT_ROOT}/runs"
+        - "-v chia-ctv-gcloud-${USER}:/home/ray/.config/gcloud:ro"
+        - "-e CHIA_PROJECT_ROOT=${CHIA_PROJECT_ROOT}"
+        - "-e GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}"
+        - "-e GOOGLE_CLOUD_LOCATION=global"
+        - "-e TMPDIR=/tmp"
+        - "-e TMP=/tmp"
+        - "-e TEMP=/tmp"
+        - "-e OMP_NUM_THREADS=1"
+        - "-e OPENBLAS_NUM_THREADS=1"
+        - "-e MKL_NUM_THREADS=1"
+        - "-e NUMEXPR_NUM_THREADS=1"
+
+  opencode_vertex:
+    resources:
+      opencode_creds: 1
+    num_workers: 1
+    compatible_ips: ["${CHIA_HEAD_IP}"]
+    worker_setup_commands:
+      - "rm -rf /tmp/chia-trusted-verification-install && mkdir -p /tmp/chia-trusted-verification-install"
+      - "cp -a /opt/chia-trusted-verification/pyproject.toml /opt/chia-trusted-verification/README.md /opt/chia-trusted-verification/src /tmp/chia-trusted-verification-install/"
+      - "python -m pip install --no-cache-dir /tmp/chia-trusted-verification-install"
+    docker:
+      image: ghcr.io/ucb-bar/chia-opencode:latest
+      container_name: "chia-ctv-opencode-${USER}"
+      run_options:
+        - "-v ${CHIA_PROJECT_ROOT}:/opt/chia-trusted-verification:ro"
+        - "-v chia-ctv-gcloud-${USER}:/home/ray/.config/gcloud:ro"
+        - "-e GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}"
+        - "-e VERTEX_LOCATION=global"
+        - "-e TMPDIR=/tmp"
+        - "-e TMP=/tmp"
+        - "-e TEMP=/tmp"
+        - "-e OMP_NUM_THREADS=1"
+        - "-e OPENBLAS_NUM_THREADS=1"
+        - "-e MKL_NUM_THREADS=1"
+        - "-e NUMEXPR_NUM_THREADS=1"
+
+head_env_commands:
+  - "source ~/.bashrc && conda activate chia_env"
+
+head_start_ray_commands:
+  - ray stop --force || true
+  - mkdir -p /tmp/ctv-${USER}
+  - OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 ray start --head --port=6379 --temp-dir=/tmp/ctv-${USER} --num-cpus=4 --include-dashboard=True --dashboard-host=127.0.0.1 --dashboard-port=8265 --dashboard-agent-listen-port=52365
+
+worker_start_ray_commands:
+  - ray stop
+  - OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 ray start --address=$RAY_HEAD_IP:6379 --num-cpus=4 --dashboard-agent-listen-port=0
